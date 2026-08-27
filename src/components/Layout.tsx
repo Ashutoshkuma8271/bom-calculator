@@ -322,6 +322,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
           {/* Right Header Actions */}
           <div className="flex items-center space-x-3">
+            {/* Mobile Search Button (visible on xs/sm) */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setSearchModalOpen(true)}
+              className="md:hidden p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
+              title="Search"
+            >
+              <Search className="h-4 w-4" />
+            </motion.button>
+
             {/* Currency Switcher */}
             <div className="relative">
               <select
@@ -359,7 +369,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.95 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl border border-slate-100 p-4 z-40"
+                      className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-sm sm:w-96 bg-white rounded-3xl shadow-2xl border border-slate-100 p-4 z-40"
                     >
                       <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                         <div className="flex items-center space-x-2">
@@ -423,9 +433,74 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </header>
 
         {/* Page Content Container */}
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 max-w-7xl w-full mx-auto">
+        <main className="flex-1 px-3 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl w-full mx-auto pb-24 lg:pb-12">
           {children}
         </main>
+
+        {/* Mobile Sticky Bottom Navigation Bar */}
+        <div className="lg:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-lg border-t border-slate-200/90 z-30 px-2 py-1.5 shadow-lg">
+          <div className="flex items-center justify-around">
+            <Link
+              to="/"
+              className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition-all ${
+                isActive('/') && location.pathname === '/'
+                  ? 'text-emerald-700 font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              <span className="text-[10px] mt-0.5">Home</span>
+            </Link>
+
+            <Link
+              to="/calculator"
+              className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition-all ${
+                isActive('/calculator')
+                  ? 'text-emerald-700 font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Calculator className="h-4 w-4" />
+              <span className="text-[10px] mt-0.5">Calculator</span>
+            </Link>
+
+            <Link
+              to="/boms"
+              className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition-all ${
+                isActive('/boms')
+                  ? 'text-emerald-700 font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <FileText className="h-4 w-4" />
+              <span className="text-[10px] mt-0.5">BOMs</span>
+            </Link>
+
+            <Link
+              to="/materials"
+              className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition-all ${
+                isActive('/materials')
+                  ? 'text-emerald-700 font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Package className="h-4 w-4" />
+              <span className="text-[10px] mt-0.5">Stock</span>
+            </Link>
+
+            <Link
+              to="/reports"
+              className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition-all ${
+                isActive('/reports')
+                  ? 'text-emerald-700 font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span className="text-[10px] mt-0.5">Reports</span>
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Global Quick Search Modal */}

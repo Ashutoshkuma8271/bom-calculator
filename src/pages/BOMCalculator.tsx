@@ -538,41 +538,41 @@ const BOMCalculator: React.FC = () => {
           </div>
 
           {/* Tab Navigation for Composition Details */}
-          <div className="flex border-b border-slate-200 space-x-2">
+          <div className="flex overflow-x-auto pb-1 border-b border-slate-200 space-x-2 scrollbar-none">
             <button
               type="button"
               onClick={() => setActiveTab('materials')}
-              className={`pb-3 px-3 text-xs font-extrabold flex items-center space-x-2 border-b-2 transition-colors ${
+              className={`pb-3 px-3 text-xs font-extrabold flex items-center space-x-2 border-b-2 whitespace-nowrap transition-colors ${
                 activeTab === 'materials'
                   ? 'border-emerald-600 text-emerald-800'
                   : 'border-transparent text-slate-500 hover:text-slate-900'
               }`}
             >
-              <Package className="h-4 w-4" />
+              <Package className="h-4 w-4 shrink-0" />
               <span>1. Ingredients & Materials ({itemFields.length})</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('labor')}
-              className={`pb-3 px-3 text-xs font-extrabold flex items-center space-x-2 border-b-2 transition-colors ${
+              className={`pb-3 px-3 text-xs font-extrabold flex items-center space-x-2 border-b-2 whitespace-nowrap transition-colors ${
                 activeTab === 'labor'
                   ? 'border-emerald-600 text-emerald-800'
                   : 'border-transparent text-slate-500 hover:text-slate-900'
               }`}
             >
-              <Clock className="h-4 w-4" />
+              <Clock className="h-4 w-4 shrink-0" />
               <span>2. Labor & Operations ({laborFields.length})</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('overheads')}
-              className={`pb-3 px-3 text-xs font-extrabold flex items-center space-x-2 border-b-2 transition-colors ${
+              className={`pb-3 px-3 text-xs font-extrabold flex items-center space-x-2 border-b-2 whitespace-nowrap transition-colors ${
                 activeTab === 'overheads'
                   ? 'border-emerald-600 text-emerald-800'
                   : 'border-transparent text-slate-500 hover:text-slate-900'
               }`}
             >
-              <Sliders className="h-4 w-4" />
+              <Sliders className="h-4 w-4 shrink-0" />
               <span>3. Overheads & Margin ({watchedValues.profitMargin}%)</span>
             </button>
           </div>
