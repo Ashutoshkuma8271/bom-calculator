@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, 
@@ -33,20 +33,21 @@ import { formatCurrency } from '../lib/utils';
 import { exportToPDF } from '../lib/export';
 import { useThemeStore } from '../stores/themeStore';
 import { getProductImage, AKIRA_PRODUCT_IMAGES } from '../lib/productImages';
+import ImageWithFallback from '../components/ImageWithFallback';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.07,
+      staggerChildren: 0.05,
     },
   },
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring', damping: 22, stiffness: 320 } },
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', damping: 24, stiffness: 340 } },
 };
 
 const Dashboard: React.FC = () => {
@@ -54,15 +55,29 @@ const Dashboard: React.FC = () => {
   const { theme } = useThemeStore();
   const navigate = useNavigate();
 
-  const totalValue = boms.reduce((sum, bom) => sum + bom.grandTotal, 0);
-  const totalMaterialCost = boms.reduce((sum, bom) => sum + bom.totalMaterialCost, 0);
-  const totalLaborCost = boms.reduce((sum, bom) => sum + bom.totalLaborCost, 0);
-  const activeBOMsCount = boms.filter((b) => b.status === 'active').length;
-  const avgMargin = boms.length > 0
-    ? (boms.reduce((sum, b) => sum + (b.profitMargin || 0), 0) / boms.length).toFixed(1)
-    : '0';
+  const { totalValue, totalMaterialCost, totalLaborCost, totalOverhead, totalProfit, activeBOMsCount, avgMargin } = useMemo(() => {
+    const totalVal = boms.reduce((sum, bom) => sum + bom.grandTotal, 0);
+    const totalMat = boms.reduce((sum, bom) => sum + bom.totalMaterialCost, 0);
+    const totalLab = boms.reduce((sum, bom) => sum + bom.totalLaborCost, 0);
+    const totalOv = boms.reduce((sum, b) => sum + b.totalOverhead, 0);
+    const totalProf = boms.reduce((sum, b) => sum + b.totalProfit, 0);
+    const activeCount = boms.filter((b) => b.status === 'active').length;
+    const margin = boms.length > 0
+      ? (boms.reduce((sum, b) => sum + (b.profitMargin || 0), 0) / boms.length).toFixed(1)
+      : '0';
 
-  const stats = [
+    return {
+      totalValue: totalVal,
+      totalMaterialCost: totalMat,
+      totalLaborCost: totalLab,
+      totalOverhead: totalOv,
+      totalProfit: totalProf,
+      activeBOMsCount: activeCount,
+      avgMargin: margin,
+    };
+  }, [boms]);
+
+  const stats = useMemo(() => [
     {
       name: 'Total Pipeline Value',
       value: formatCurrency(totalValue, currency),
@@ -99,23 +114,23 @@ const Dashboard: React.FC = () => {
       iconBg: 'bg-amber-500 dark:bg-amber-400 text-white dark:text-slate-950',
       link: '/reports',
     },
-  ];
+  ], [totalValue, currency, boms.length, activeBOMsCount, materials.length, avgMargin]);
 
-  // Chart data for cost comparison
-  const costDistributionData = [
+  // Memoized Chart data for cost comparison
+  const costDistributionData = useMemo(() => [
     { name: 'Raw Ingredients & Meats', value: totalMaterialCost, color: '#059669' },
     { name: 'Labor & Processing', value: totalLaborCost, color: '#0ea5e9' },
-    { name: 'Overhead & Cold Chain', value: boms.reduce((sum, b) => sum + b.totalOverhead, 0), color: '#f59e0b' },
-    { name: 'Net Profit Margin', value: boms.reduce((sum, b) => sum + b.totalProfit, 0), color: '#10b981' },
-  ];
+    { name: 'Overhead & Cold Chain', value: totalOverhead, color: '#f59e0b' },
+    { name: 'Net Profit Margin', value: totalProfit, color: '#10b981' },
+  ], [totalMaterialCost, totalLaborCost, totalOverhead, totalProfit]);
 
-  // Batch trends
-  const batchTrendData = boms.map((b) => ({
+  // Memoized Batch trends
+  const batchTrendData = useMemo(() => boms.map((b) => ({
     name: b.name.length > 20 ? b.name.substring(0, 18) + '...' : b.name,
     total: b.grandTotal,
     materials: b.totalMaterialCost,
     labor: b.totalLaborCost,
-  }));
+  })), [boms]);
 
   const quickTemplates = [
     {
@@ -311,12 +326,11 @@ const Dashboard: React.FC = () => {
               <div>
                 {/* Product Photo with Badges */}
                 <div className="relative h-36 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-                  <img
+                  <ImageWithFallback
                     src={template.image}
                     alt={template.title}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
-                    loading="lazy"
+                    fallbackCategory={template.tag}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
                   
@@ -499,12 +513,11 @@ const Dashboard: React.FC = () => {
                 <div className="flex items-start sm:items-center gap-3.5 max-w-xl">
                   {/* Thumbnail Image */}
                   <div className="relative w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
-                    <img
+                    <ImageWithFallback
                       src={itemImage}
                       alt={bom.name}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      loading="lazy"
+                      fallbackCategory={bom.category}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
 

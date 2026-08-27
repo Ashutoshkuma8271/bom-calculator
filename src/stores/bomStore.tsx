@@ -844,12 +844,22 @@ const loadFromStorage = <T,>(key: string, defaultValue: T): T => {
   }
 };
 
+// Debounced storage write map to prevent frame-drops during rapid calculations
+const saveTimeouts: Record<string, number> = {};
+
 const saveToStorage = (key: string, data: any) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (e) {
-    console.error('Failed to save to local storage', e);
+  if (typeof window === 'undefined') return;
+  if (saveTimeouts[key]) {
+    clearTimeout(saveTimeouts[key]);
   }
+  
+  saveTimeouts[key] = window.setTimeout(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {
+      console.error('Failed to save to local storage', e);
+    }
+  }, 100);
 };
 
 const useBOMStore = create<BOMStore>()((set, get) => ({

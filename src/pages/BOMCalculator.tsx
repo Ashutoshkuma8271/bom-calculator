@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -26,6 +26,7 @@ import { formatCurrency, generateId } from '../lib/utils';
 import { exportToExcel, exportToPDF } from '../lib/export';
 import { BOM, BOMFormData } from '../types';
 import { getProductImage } from '../lib/productImages';
+import ImageWithFallback from '../components/ImageWithFallback';
 
 const bomSchema = z.object({
   name: z.string().min(1, 'BOM name is required'),
@@ -924,10 +925,10 @@ const BOMCalculator: React.FC = () => {
           <div className="fresh-card p-5 sticky top-20 space-y-5">
             {/* Header Product Preview with Real Photo */}
             <div className="relative h-32 w-full rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-              <img
+              <ImageWithFallback
                 src={getProductImage({ name: watchedValues.name, category: watchedValues.category })}
                 alt={watchedValues.name || 'Recipe Preview'}
-                referrerPolicy="no-referrer"
+                fallbackCategory={watchedValues.category}
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
@@ -1086,10 +1087,10 @@ const BOMCalculator: React.FC = () => {
                       className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 cursor-pointer transition-all space-y-2.5 group"
                     >
                       <div className="flex items-center gap-3">
-                        <img
+                        <ImageWithFallback
                           src={presetImg}
                           alt={preset.name}
-                          referrerPolicy="no-referrer"
+                          fallbackCategory={preset.category}
                           className="w-12 h-12 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700"
                         />
                         <div className="min-w-0 flex-1">

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   BarChart3, 
   Download 
@@ -26,18 +26,18 @@ const containerVariants: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.05
+      staggerChildren: 0.04,
+      delayChildren: 0.02
     }
   }
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
+  hidden: { opacity: 0, y: 10 },
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { type: 'spring', damping: 24, stiffness: 300 }
+    transition: { type: 'spring', damping: 25, stiffness: 320 }
   }
 };
 
@@ -45,32 +45,43 @@ const Reports: React.FC = () => {
   const { boms, currency } = useBOMStore();
   const { theme } = useThemeStore();
 
-  const totalValue = boms.reduce((sum, bom) => sum + bom.grandTotal, 0);
-  const totalMaterialCost = boms.reduce((sum, bom) => sum + bom.totalMaterialCost, 0);
-  const totalLaborCost = boms.reduce((sum, bom) => sum + bom.totalLaborCost, 0);
-  const totalProfit = boms.reduce((sum, bom) => sum + bom.totalProfit, 0);
+  const { totalValue, totalMaterialCost, totalLaborCost, totalProfit, categoryChartData, profitabilityData } = useMemo(() => {
+    const totalVal = boms.reduce((sum, bom) => sum + bom.grandTotal, 0);
+    const totalMat = boms.reduce((sum, bom) => sum + bom.totalMaterialCost, 0);
+    const totalLab = boms.reduce((sum, bom) => sum + bom.totalLaborCost, 0);
+    const totalProf = boms.reduce((sum, bom) => sum + bom.totalProfit, 0);
 
-  // Category spend
-  const categorySpendMap: Record<string, number> = {};
-  boms.forEach((b) => {
-    b.items.forEach((item) => {
-      const cat = item.category || 'Proteins & Meats';
-      categorySpendMap[cat] = (categorySpendMap[cat] || 0) + item.totalCost;
+    const categorySpendMap: Record<string, number> = {};
+    boms.forEach((b) => {
+      b.items.forEach((item) => {
+        const cat = item.category || 'Proteins & Meats';
+        categorySpendMap[cat] = (categorySpendMap[cat] || 0) + item.totalCost;
+      });
     });
-  });
 
-  const categoryChartData = Object.entries(categorySpendMap).map(([name, value], i) => {
     const colors = ['#059669', '#0284c7', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899'];
-    return { name, value, color: colors[i % colors.length] };
-  });
+    const catData = Object.entries(categorySpendMap).map(([name, value], i) => ({
+      name,
+      value,
+      color: colors[i % colors.length]
+    }));
 
-  // Profitability per BOM
-  const profitabilityData = boms.map((b) => ({
-    name: b.name.length > 22 ? b.name.substring(0, 20) + '...' : b.name,
-    ProductionCost: b.totalMaterialCost + b.totalLaborCost + b.totalOverhead,
-    ProfitMargin: b.totalProfit,
-    GrandTotal: b.grandTotal,
-  }));
+    const profData = boms.map((b) => ({
+      name: b.name.length > 22 ? b.name.substring(0, 20) + '...' : b.name,
+      ProductionCost: b.totalMaterialCost + b.totalLaborCost + b.totalOverhead,
+      ProfitMargin: b.totalProfit,
+      GrandTotal: b.grandTotal,
+    }));
+
+    return {
+      totalValue: totalVal,
+      totalMaterialCost: totalMat,
+      totalLaborCost: totalLab,
+      totalProfit: totalProf,
+      categoryChartData: catData,
+      profitabilityData: profData,
+    };
+  }, [boms]);
 
   const handleExportAllPDF = () => {
     if (boms.length === 0) return;

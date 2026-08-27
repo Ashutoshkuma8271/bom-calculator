@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Package, 
   Plus, 
@@ -16,24 +16,25 @@ import useBOMStore from '../stores/bomStore';
 import { formatCurrency, generateId, getCategoryBadgeColor } from '../lib/utils';
 import { Material } from '../types';
 import { getMaterialImage } from '../lib/productImages';
+import ImageWithFallback from '../components/ImageWithFallback';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.05
+      staggerChildren: 0.04,
+      delayChildren: 0.02
     }
   }
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
+  hidden: { opacity: 0, y: 10 },
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { type: 'spring', damping: 24, stiffness: 300 }
+    transition: { type: 'spring', damping: 25, stiffness: 320 }
   }
 };
 
@@ -77,14 +78,29 @@ const Materials: React.FC = () => {
     'Cold Chain & Logistics',
   ];
 
-  const filteredMaterials = materials.filter((material) => {
-    const matchesSearch =
-      material.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      material.supplier?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      material.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || material.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredMaterials = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return materials.filter((material) => {
+      const matchesSearch =
+        !q ||
+        material.name.toLowerCase().includes(q) ||
+        material.supplier?.toLowerCase().includes(q) ||
+        material.description?.toLowerCase().includes(q);
+      const matchesCategory = selectedCategory === 'all' || material.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [materials, searchQuery, selectedCategory]);
+
+  const { totalInventoryValue, lowStockCount, coldChainCount } = useMemo(() => {
+    const totalVal = materials.reduce((sum, m) => sum + (m.costPerUnit * (m.inStock || 0)), 0);
+    const lowStock = materials.filter((m) => (m.inStock || 0) <= (m.reorderLevel || 0)).length;
+    const coldCount = materials.filter(m => m.storageCondition?.includes('Frozen') || m.storageCondition?.includes('Chilled')).length;
+    return {
+      totalInventoryValue: totalVal,
+      lowStockCount: lowStock,
+      coldChainCount: coldCount,
+    };
+  }, [materials]);
 
   const handleOpenAdd = () => {
     setEditingMaterial(null);
@@ -150,8 +166,6 @@ const Materials: React.FC = () => {
       toast.success('Material deleted');
     }
   };
-
-  const lowStockCount = materials.filter(m => (m.inStock || 0) <= (m.reorderLevel || 0)).length;
 
   return (
     <motion.div 
@@ -289,12 +303,11 @@ const Materials: React.FC = () => {
                   <tr key={material.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
-                        <img
+                        <ImageWithFallback
                           src={matImage}
                           alt={material.name}
-                          referrerPolicy="no-referrer"
+                          fallbackCategory={material.category}
                           className="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs"
-                          loading="lazy"
                         />
                         <div>
                           <p className="font-bold text-slate-900 dark:text-white text-sm font-display">{material.name}</p>

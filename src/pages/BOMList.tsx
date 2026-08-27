@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, 
@@ -22,24 +22,25 @@ import { formatCurrency } from '../lib/utils';
 import { exportToPDF } from '../lib/export';
 import { BOM } from '../types';
 import { getProductImage } from '../lib/productImages';
+import ImageWithFallback from '../components/ImageWithFallback';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.05
+      staggerChildren: 0.04,
+      delayChildren: 0.02
     }
   }
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
+  hidden: { opacity: 0, y: 10 },
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { type: 'spring', damping: 24, stiffness: 300 }
+    transition: { type: 'spring', damping: 25, stiffness: 320 }
   }
 };
 
@@ -53,17 +54,21 @@ const BOMList: React.FC = () => {
   const [selectedBOM, setSelectedBOM] = useState<BOM | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
-  const categories = Array.from(new Set(boms.map((b) => b.category).filter(Boolean)));
+  const categories = useMemo(() => Array.from(new Set(boms.map((b) => b.category).filter(Boolean))), [boms]);
 
-  const filteredBOMs = boms.filter((bom) => {
-    const matchesSearch =
-      bom.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bom.projectCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bom.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || bom.status === statusFilter;
-    const matchesCategory = categoryFilter === 'all' || bom.category === categoryFilter;
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
+  const filteredBOMs = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return boms.filter((bom) => {
+      const matchesSearch =
+        !q ||
+        bom.name.toLowerCase().includes(q) ||
+        bom.projectCode?.toLowerCase().includes(q) ||
+        bom.description?.toLowerCase().includes(q);
+      const matchesStatus = statusFilter === 'all' || bom.status === statusFilter;
+      const matchesCategory = categoryFilter === 'all' || bom.category === categoryFilter;
+      return matchesSearch && matchesStatus && matchesCategory;
+    });
+  }, [boms, searchQuery, statusFilter, categoryFilter]);
 
   const handleDelete = (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"?`)) {
@@ -201,12 +206,11 @@ const BOMList: React.FC = () => {
                 <div>
                   {/* Photo Header */}
                   <div className="relative h-44 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-                    <img
+                    <ImageWithFallback
                       src={itemImage}
                       alt={bom.name}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
-                      loading="lazy"
+                      fallbackCategory={bom.category}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent" />
                     
@@ -365,12 +369,11 @@ const BOMList: React.FC = () => {
                     <tr key={bom.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          <img
+                          <ImageWithFallback
                             src={itemImage}
                             alt={bom.name}
-                            referrerPolicy="no-referrer"
+                            fallbackCategory={bom.category}
                             className="w-11 h-11 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700"
-                            loading="lazy"
                           />
                           <div>
                             <div className="flex items-center space-x-1.5">
@@ -469,10 +472,10 @@ const BOMList: React.FC = () => {
             >
               {/* Modal Cover Image */}
               <div className="relative h-44 w-full overflow-hidden bg-slate-900">
-                <img
+                <ImageWithFallback
                   src={selectedBOM.imageUrl || getProductImage(selectedBOM)}
                   alt={selectedBOM.name}
-                  referrerPolicy="no-referrer"
+                  fallbackCategory={selectedBOM.category}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent" />
