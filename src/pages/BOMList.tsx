@@ -9,20 +9,23 @@ import {
   Edit, 
   Eye, 
   FileText, 
+  FileSpreadsheet,
   Snowflake, 
   X,
   Layers,
   Sparkles,
-  DollarSign
+  DollarSign,
+  Sliders
 } from 'lucide-react';
 import { motion, AnimatePresence, type Variants } from 'motion/react';
 import { toast } from 'sonner';
 import useBOMStore from '../stores/bomStore';
 import { formatCurrency } from '../lib/utils';
-import { exportToPDF } from '../lib/export';
+import { exportToPDF, exportToCSV, exportAllBOMsToPDF, exportAllBOMsToCSV } from '../lib/export';
 import { BOM } from '../types';
 import { getProductImage } from '../lib/productImages';
 import ImageWithFallback from '../components/ImageWithFallback';
+import ExportModal from '../components/ExportModal';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -52,6 +55,7 @@ const BOMList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [selectedBOM, setSelectedBOM] = useState<BOM | null>(null);
+  const [exportModalBOM, setExportModalBOM] = useState<BOM | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   const categories = useMemo(() => Array.from(new Set(boms.map((b) => b.category).filter(Boolean))), [boms]);
@@ -82,6 +86,42 @@ const BOMList: React.FC = () => {
     toast.success('BOM duplicated as copy');
   };
 
+  const handleExportSinglePDF = (bom: BOM) => {
+    exportToPDF(bom, { currency });
+    toast.success(`Generated PDF specification for "${bom.name}"`, {
+      icon: <FileText className="w-4 h-4 text-emerald-500" />
+    });
+  };
+
+  const handleExportSingleCSV = (bom: BOM) => {
+    exportToCSV(bom, { currency });
+    toast.success(`Exported CSV dataset for "${bom.name}"`, {
+      icon: <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+    });
+  };
+
+  const handleExportAllPDF = () => {
+    if (filteredBOMs.length === 0) {
+      toast.error('No BOMs available to export');
+      return;
+    }
+    exportAllBOMsToPDF(filteredBOMs, currency);
+    toast.success(`Exported Executive Master PDF for ${filteredBOMs.length} recipes`, {
+      icon: <Download className="w-4 h-4 text-emerald-500" />
+    });
+  };
+
+  const handleExportAllCSV = () => {
+    if (filteredBOMs.length === 0) {
+      toast.error('No BOMs available to export');
+      return;
+    }
+    exportAllBOMsToCSV(filteredBOMs, currency);
+    toast.success(`Exported Master CSV dataset for ${filteredBOMs.length} recipes`, {
+      icon: <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+    });
+  };
+
   return (
     <motion.div 
       variants={containerVariants}
@@ -105,7 +145,30 @@ const BOMList: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center flex-wrap gap-2.5">
+          {/* Bulk Export Actions */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleExportAllCSV}
+            className="inline-flex items-center px-3 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/60 dark:bg-emerald-950/40 hover:bg-emerald-100/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            title="Export full registry to CSV"
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-1.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Export CSV</span>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleExportAllPDF}
+            className="inline-flex items-center px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            title="Export master executive PDF catalog"
+          >
+            <Download className="h-4 w-4 mr-1.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Export PDF</span>
+          </motion.button>
+
           <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
             <Link
               to="/calculator"
@@ -303,22 +366,38 @@ const BOMList: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1">
                     <motion.button
                       whileTap={{ scale: 0.94 }}
                       onClick={() => {
                         setCurrentBOM(bom);
                         navigate('/calculator');
                       }}
-                      className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-bold transition-colors shadow-2xs"
+                      className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-bold transition-colors shadow-2xs cursor-pointer"
                       title="Edit BOM"
                     >
                       Edit
                     </motion.button>
                     <motion.button
                       whileTap={{ scale: 0.9 }}
+                      onClick={() => handleExportSinglePDF(bom)}
+                      className="p-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                      title="Export PDF"
+                    >
+                      <Download className="h-4 w-4" />
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => handleExportSingleCSV(bom)}
+                      className="p-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                      title="Export CSV"
+                    >
+                      <FileSpreadsheet className="h-4 w-4" />
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => setSelectedBOM(bom)}
-                      className="p-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                       title="Quick View"
                     >
                       <Eye className="h-4 w-4" />
@@ -326,7 +405,7 @@ const BOMList: React.FC = () => {
                     <motion.button
                       whileTap={{ scale: 0.9 }}
                       onClick={() => handleDuplicate(bom.id)}
-                      className="p-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                       title="Duplicate"
                     >
                       <Copy className="h-4 w-4" />
@@ -334,7 +413,7 @@ const BOMList: React.FC = () => {
                     <motion.button
                       whileTap={{ scale: 0.9 }}
                       onClick={() => handleDelete(bom.id, bom.name)}
-                      className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                      className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                       title="Delete"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -412,23 +491,31 @@ const BOMList: React.FC = () => {
                               setCurrentBOM(bom);
                               navigate('/calculator');
                             }}
-                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
                             title="Edit"
                           >
                             <Edit className="h-4 w-4" />
                           </motion.button>
                           <motion.button
                             whileTap={{ scale: 0.85 }}
-                            onClick={() => exportToPDF(bom, { format: 'pdf', includeCosts: true, includeLabor: true, includeSummary: true })}
-                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg"
-                            title="Export PDF"
+                            onClick={() => handleExportSinglePDF(bom)}
+                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg cursor-pointer"
+                            title="Export PDF Report"
                           >
                             <Download className="h-4 w-4" />
                           </motion.button>
                           <motion.button
                             whileTap={{ scale: 0.85 }}
+                            onClick={() => handleExportSingleCSV(bom)}
+                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg cursor-pointer"
+                            title="Export CSV Dataset"
+                          >
+                            <FileSpreadsheet className="h-4 w-4" />
+                          </motion.button>
+                          <motion.button
+                            whileTap={{ scale: 0.85 }}
                             onClick={() => handleDuplicate(bom.id)}
-                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
                             title="Duplicate"
                           >
                             <Copy className="h-4 w-4" />
@@ -436,7 +523,7 @@ const BOMList: React.FC = () => {
                           <motion.button
                             whileTap={{ scale: 0.85 }}
                             onClick={() => handleDelete(bom.id, bom.name)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg cursor-pointer"
                             title="Delete"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -558,16 +645,37 @@ const BOMList: React.FC = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => exportToPDF(selectedBOM, { format: 'pdf', includeCosts: true, includeLabor: true, includeSummary: true })}
-                    className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center space-x-1.5"
-                  >
-                    <Download className="h-4 w-4" />
-                    <span>Export PDF</span>
-                  </motion.button>
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 flex-wrap gap-2">
+                  <div className="flex items-center space-x-2">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleExportSinglePDF(selectedBOM)}
+                      className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer shadow-2xs"
+                    >
+                      <Download className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>PDF</span>
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleExportSingleCSV(selectedBOM)}
+                      className="px-3.5 py-2 rounded-xl border border-emerald-200/80 dark:border-emerald-800/80 bg-emerald-50/60 dark:bg-emerald-950/40 hover:bg-emerald-100/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer shadow-2xs"
+                    >
+                      <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>CSV</span>
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setExportModalBOM(selectedBOM)}
+                      className="px-2.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer"
+                      title="Custom Export Settings"
+                    >
+                      <Sliders className="h-4 w-4 text-slate-500" />
+                    </motion.button>
+                  </div>
+
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -575,7 +683,7 @@ const BOMList: React.FC = () => {
                       setCurrentBOM(selectedBOM);
                       navigate('/calculator');
                     }}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold transition-all"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
                   >
                     Open in Calculator
                   </motion.button>
@@ -585,6 +693,15 @@ const BOMList: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Export Options Modal */}
+      {exportModalBOM && (
+        <ExportModal
+          isOpen={!!exportModalBOM}
+          onClose={() => setExportModalBOM(null)}
+          bom={exportModalBOM}
+        />
+      )}
     </motion.div>
   );
 };

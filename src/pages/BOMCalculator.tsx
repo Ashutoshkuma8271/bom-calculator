@@ -23,10 +23,11 @@ import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 import useBOMStore from '../stores/bomStore';
 import { formatCurrency, generateId } from '../lib/utils';
-import { exportToExcel, exportToPDF } from '../lib/export';
-import { BOM, BOMFormData } from '../types';
+import { exportToExcel, exportToPDF, exportToCSV } from '../lib/export';
+import { BOM, BOMFormData, ExportOptions } from '../types';
 import { getProductImage } from '../lib/productImages';
 import ImageWithFallback from '../components/ImageWithFallback';
+import ExportModal from '../components/ExportModal';
 
 const bomSchema = z.object({
   name: z.string().min(1, 'BOM name is required'),
@@ -83,6 +84,7 @@ const BOMCalculator: React.FC = () => {
   } = useBOMStore();
 
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'materials' | 'labor' | 'overheads'>('materials');
 
   const defaultValues: BOMFormData = {
@@ -262,76 +264,73 @@ const BOMCalculator: React.FC = () => {
     triggerConfetti();
   };
 
-  const handleExportExcel = () => {
-    const bomToExport: BOM = {
+  const constructCurrentBOM = (): BOM => {
+    const batchQtyVal = watchedValues.batchQuantity || 1;
+    const items = (watchedValues.items || []).map((item, index) => ({
+      ...item,
+      id: currentBOM?.items[index]?.id || `item-${index + 1}`,
+      totalCost: (item.quantity || 0) * (item.costPerUnit || 0) * (1 + (item.wastePercentage || 0) / 100),
+    }));
+
+    const laborItems = (watchedValues.laborItems || []).map((item, index) => ({
+      ...item,
+      id: currentBOM?.laborItems[index]?.id || `labor-${index + 1}`,
+      totalCost: (item.hours || 0) * (item.hourlyRate || 0),
+    }));
+
+    return {
       id: currentBOM?.id || generateId(),
-      ...watchedValues,
-      items: watchedValues.items.map((item, index) => ({
-        ...item,
-        id: currentBOM?.items[index]?.id || generateId(),
-        totalCost: item.quantity * item.costPerUnit * (1 + (item.wastePercentage || 0) / 100),
-      })),
-      laborItems: watchedValues.laborItems.map((item, index) => ({
-        ...item,
-        id: currentBOM?.laborItems[index]?.id || generateId(),
-        totalCost: item.hours * item.hourlyRate,
-      })),
+      name: watchedValues.name || 'Untitled Recipe',
+      description: watchedValues.description || '',
+      projectCode: watchedValues.projectCode || 'AF-BOM',
+      category: watchedValues.category || 'Food & Ready-to-Cook',
+      batchQuantity: batchQtyVal,
+      batchUnit: watchedValues.batchUnit || 'units',
+      storageCondition: watchedValues.storageCondition || 'Frozen (-18°C)',
+      overheadPercentage: watchedValues.overheadPercentage || 8.0,
+      profitMargin: watchedValues.profitMargin || 25.0,
+      items,
+      laborItems,
       totalMaterialCost: calculatedTotals.totalMaterialCost || 0,
       totalLaborCost: calculatedTotals.totalLaborCost || 0,
       totalOverhead: calculatedTotals.totalOverhead || 0,
       totalProfit: calculatedTotals.totalProfit || 0,
       grandTotal: calculatedTotals.grandTotal || 0,
-      costPerUnit: calculatedTotals.costPerUnit || 0,
-      suggestedSellingPrice: calculatedTotals.suggestedSellingPrice || 0,
+      costPerUnit: (calculatedTotals.grandTotal || 0) / batchQtyVal,
+      suggestedSellingPrice: calculatedTotals.suggestedSellingPrice || ((calculatedTotals.grandTotal || 0) / batchQtyVal * 1.35),
       version: currentBOM?.version || '1.0',
       createdAt: currentBOM?.createdAt || new Date(),
       updatedAt: new Date(),
       status: currentBOM?.status || 'active',
     };
+  };
 
+  const handleExportCSV = () => {
+    const bomToExport = constructCurrentBOM();
+    exportToCSV(bomToExport, { currency });
+    toast.success(`Exported CSV dataset for "${bomToExport.name}"`, {
+      icon: <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+    });
+  };
+
+  const handleExportPDF = () => {
+    const bomToExport = constructCurrentBOM();
+    exportToPDF(bomToExport, { currency });
+    toast.success(`Generated official PDF specification for "${bomToExport.name}"`, {
+      icon: <Download className="w-4 h-4 text-emerald-500" />
+    });
+  };
+
+  const handleExportExcel = () => {
+    const bomToExport = constructCurrentBOM();
     exportToExcel(bomToExport, {
       format: 'excel',
       includeCosts: true,
       includeLabor: true,
       includeSummary: true,
+      currency,
     });
-    toast.success('Excel exported successfully');
-  };
-
-  const handleExportPDF = () => {
-    const bomToExport: BOM = {
-      id: currentBOM?.id || generateId(),
-      ...watchedValues,
-      items: watchedValues.items.map((item, index) => ({
-        ...item,
-        id: currentBOM?.items[index]?.id || generateId(),
-        totalCost: item.quantity * item.costPerUnit * (1 + (item.wastePercentage || 0) / 100),
-      })),
-      laborItems: watchedValues.laborItems.map((item, index) => ({
-        ...item,
-        id: currentBOM?.laborItems[index]?.id || generateId(),
-        totalCost: item.hours * item.hourlyRate,
-      })),
-      totalMaterialCost: calculatedTotals.totalMaterialCost || 0,
-      totalLaborCost: calculatedTotals.totalLaborCost || 0,
-      totalOverhead: calculatedTotals.totalOverhead || 0,
-      totalProfit: calculatedTotals.totalProfit || 0,
-      grandTotal: calculatedTotals.grandTotal || 0,
-      costPerUnit: calculatedTotals.costPerUnit || 0,
-      suggestedSellingPrice: calculatedTotals.suggestedSellingPrice || 0,
-      version: currentBOM?.version || '1.0',
-      createdAt: currentBOM?.createdAt || new Date(),
-      updatedAt: new Date(),
-      status: currentBOM?.status || 'active',
-    };
-
-    exportToPDF(bomToExport, {
-      format: 'pdf',
-      includeCosts: true,
-      includeLabor: true,
-      includeSummary: true,
-    });
-    toast.success('PDF report generated');
+    toast.success('Excel workbook exported successfully');
   };
 
   const batchQty = watchedValues.batchQuantity || 1;
@@ -377,10 +376,10 @@ const BOMCalculator: React.FC = () => {
             whileTap={{ scale: 0.98 }}
             type="button"
             onClick={() => setTemplateModalOpen(true)}
-            className="inline-flex items-center px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all"
+            className="inline-flex items-center px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer"
           >
             <Sparkles className="h-4 w-4 mr-1.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Load Preset Recipe</span>
+            <span>Preset</span>
           </motion.button>
 
           <motion.button
@@ -392,32 +391,48 @@ const BOMCalculator: React.FC = () => {
               reset(defaultValues);
               toast.info('Calculator reset to blank state');
             }}
-            className="inline-flex items-center px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold transition-all"
+            className="inline-flex items-center px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold transition-all cursor-pointer"
             title="Reset Form"
           >
             <RotateCcw className="h-4 w-4" />
           </motion.button>
 
+          {/* Export CSV Button */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             type="button"
-            onClick={handleExportExcel}
-            className="inline-flex items-center px-3.5 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800/80 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-all"
+            onClick={handleExportCSV}
+            className="inline-flex items-center px-3 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800/80 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            title="Export CSV spreadsheet format"
           >
             <FileSpreadsheet className="h-4 w-4 mr-1.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Excel</span>
+            <span>Export CSV</span>
           </motion.button>
 
+          {/* Export PDF Button */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             type="button"
             onClick={handleExportPDF}
-            className="inline-flex items-center px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all"
+            className="inline-flex items-center px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            title="Generate professional PDF report"
           >
-            <Download className="h-4 w-4 mr-1.5 text-slate-600 dark:text-slate-400" />
-            <span>PDF</span>
+            <Download className="h-4 w-4 mr-1.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Export PDF</span>
+          </motion.button>
+
+          {/* Export Modal Customize Button */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            type="button"
+            onClick={() => setExportModalOpen(true)}
+            className="inline-flex items-center px-2.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer"
+            title="Advanced Export Options"
+          >
+            <Sliders className="h-4 w-4 text-slate-500" />
           </motion.button>
 
           <motion.button
@@ -425,7 +440,7 @@ const BOMCalculator: React.FC = () => {
             whileTap={{ scale: 0.97 }}
             type="button"
             onClick={handleSubmit(onSubmit)}
-            className="inline-flex items-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-extrabold shadow-sm transition-all"
+            className="inline-flex items-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer"
           >
             <Save className="h-4 w-4 mr-1.5" />
             <span>Save BOM</span>
@@ -1035,14 +1050,46 @@ const BOMCalculator: React.FC = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm shadow-md shadow-emerald-600/20 transition-all"
+              className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
             >
               <Save className="h-4 w-4" />
               <span>{currentBOM ? 'Update BOM & Save' : 'Save as Active BOM'}</span>
             </motion.button>
+
+            {/* Quick Export Hub in Sidebar */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+                Export & Reporting
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleExportPDF}
+                  className="flex items-center justify-center space-x-1.5 py-2 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>PDF Spec</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportCSV}
+                  className="flex items-center justify-center space-x-1.5 py-2 px-2.5 rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 bg-emerald-50/60 dark:bg-emerald-950/40 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>CSV Table</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </form>
+
+      {/* Export Options Modal */}
+      <ExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        bom={constructCurrentBOM()}
+      />
 
       {/* Preset Recipe Modal */}
       <AnimatePresence>

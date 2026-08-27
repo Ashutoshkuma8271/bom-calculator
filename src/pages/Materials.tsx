@@ -8,7 +8,9 @@ import {
   AlertTriangle, 
   Snowflake,
   X,
-  Sparkles
+  Sparkles,
+  Download,
+  FileSpreadsheet
 } from 'lucide-react';
 import { motion, AnimatePresence, type Variants } from 'motion/react';
 import { toast } from 'sonner';
@@ -17,6 +19,7 @@ import { formatCurrency, generateId, getCategoryBadgeColor } from '../lib/utils'
 import { Material } from '../types';
 import { getMaterialImage } from '../lib/productImages';
 import ImageWithFallback from '../components/ImageWithFallback';
+import { exportMaterialsToCSV } from '../lib/export';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -167,6 +170,17 @@ const Materials: React.FC = () => {
     }
   };
 
+  const handleExportCSV = () => {
+    if (filteredMaterials.length === 0) {
+      toast.error('No ingredients found to export');
+      return;
+    }
+    exportMaterialsToCSV(filteredMaterials, currency);
+    toast.success(`Exported ${filteredMaterials.length} inventory materials to CSV`, {
+      icon: <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+    });
+  };
+
   return (
     <motion.div 
       variants={containerVariants}
@@ -190,15 +204,28 @@ const Materials: React.FC = () => {
           </div>
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleOpenAdd}
-          className="inline-flex items-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-extrabold shadow-sm transition-all"
-        >
-          <Plus className="h-4 w-4 mr-1.5" />
-          <span>Add New Material</span>
-        </motion.button>
+        <div className="flex items-center space-x-2.5">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleExportCSV}
+            className="inline-flex items-center px-3.5 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/60 dark:bg-emerald-950/40 hover:bg-emerald-100/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            title="Export ingredients catalog to CSV"
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-1.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Export CSV</span>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleOpenAdd}
+            className="inline-flex items-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer"
+          >
+            <Plus className="h-4 w-4 mr-1.5" />
+            <span>Add New Material</span>
+          </motion.button>
+        </div>
       </motion.div>
 
       {/* KPI Chips */}

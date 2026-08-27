@@ -88,8 +88,11 @@ export interface BOMFormData {
 }
 
 export interface ExportOptions {
-  format: 'pdf' | 'excel';
+  format: 'pdf' | 'csv' | 'excel';
   includeCosts: boolean;
   includeLabor: boolean;
   includeSummary: boolean;
+  currency?: string;
+  authorName?: string;
+  notes?: string;
 }
