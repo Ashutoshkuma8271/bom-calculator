@@ -1,121 +1,212 @@
-import React from 'react';
-import { Shield, Users, Settings as SettingsIcon, Activity, AlertTriangle, Sparkles, Download, Upload, Save } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  Settings as SettingsIcon, 
+  Sparkles, 
+  Download, 
+  Upload, 
+  Save, 
+  RotateCcw, 
+  Shield, 
+  Flame, 
+  Building2, 
+  Snowflake,
+  ExternalLink,
+  CheckCircle2
+} from 'lucide-react';
+import { toast } from 'sonner';
+import useBOMStore from '../stores/bomStore';
 
 const Settings: React.FC = () => {
+  const { currency, setCurrency, resetToDefaults, boms, materials, laborCosts } = useBOMStore();
+  const [companyName, setCompanyName] = useState('Akira Fresh Gourmet Foods');
+  const [plantLocation, setPlantLocation] = useState('Cold Chain Hub, New Delhi & Gurgaon');
+  const [defaultOverhead, setDefaultOverhead] = useState(8.5);
+  const [defaultMargin, setDefaultMargin] = useState(25.0);
+
+  const handleSavePreferences = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('akira_company_name', companyName);
+    localStorage.setItem('akira_plant_loc', plantLocation);
+    toast.success('Facility preferences saved');
+  };
+
+  const handleBackupExport = () => {
+    const data = {
+      boms,
+      materials,
+      laborCosts,
+      currency,
+      exportedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `akira-fresh-bom-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Backup exported as JSON');
+  };
+
+  const handleResetData = () => {
+    if (confirm('Reset all recipe BOMs, materials, and labor operations to Akira Fresh initial sample presets?')) {
+      resetToDefaults();
+      toast.success('Reset to Akira Fresh sample presets');
+    }
+  };
+
   return (
-    <div className="space-y-8 animate-slide-up">
+    <div className="space-y-6 pb-12 animate-fade-in max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="bg-gradient-to-br from-slate-500 to-slate-600 p-2 rounded-xl shadow-lg">
-            <SettingsIcon className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-              Settings
-            </h1>
-            <p className="mt-1 text-slate-500">Configure your premium BOM Calculator preferences</p>
-          </div>
+      <div className="flex items-center space-x-3">
+        <div className="p-2 rounded-xl bg-slate-900 text-white shadow-xs">
+          <SettingsIcon className="h-5 w-5" />
+        </div>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight font-display">
+            System & Facility Configuration
+          </h1>
+          <p className="text-xs text-slate-500">Configure company profile, currencies, cold chain defaults, and data backups.</p>
         </div>
       </div>
 
-      {/* General Settings */}
-      <div className="bg-white rounded-2xl shadow-premium border border-slate-100 p-8">
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-2 rounded-lg">
-            <Sparkles className="h-5 w-5 text-primary-600" />
+      {/* Facility & Enterprise Settings */}
+      <div className="fresh-card p-6 space-y-5">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center space-x-2">
+            <Flame className="h-4 w-4 text-emerald-600" />
+            <h2 className="text-sm font-bold text-slate-900">Enterprise & Manufacturing Facility</h2>
           </div>
-          <h2 className="text-xl font-semibold text-slate-900">General Settings</h2>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
+            Akira Fresh Core
+          </span>
         </div>
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Company Name
-            </label>
-            <input
-              type="text"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all duration-200"
-              placeholder="Enter company name"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Default Currency
-            </label>
-            <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all duration-200">
-              <option value="INR">Indian Rupee (₹)</option>
-              <option value="USD">US Dollar ($)</option>
-              <option value="EUR">Euro (€)</option>
-              <option value="GBP">British Pound (£)</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Default Overhead Percentage
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              defaultValue="10"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all duration-200"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Default Profit Margin
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              defaultValue="15"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all duration-200"
-            />
-          </div>
-        </div>
-      </div>
 
-      {/* Data Management */}
-      <div className="bg-white rounded-2xl shadow-premium border border-slate-100 p-8">
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="bg-gradient-to-br from-accent-50 to-accent-100 p-2 rounded-lg">
-            <Activity className="h-5 w-5 text-accent-600" />
-          </div>
-          <h2 className="text-xl font-semibold text-slate-900">Data Management</h2>
-        </div>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-6 border border-slate-200 rounded-xl hover:shadow-md transition-shadow bg-gradient-to-r from-slate-50 to-white">
+        <form onSubmit={handleSavePreferences} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <h3 className="font-semibold text-slate-900">Export Data</h3>
-              <p className="text-sm text-slate-500">Download all your BOMs and materials</p>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Company / Brand Name</label>
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                className="w-full px-3.5 py-2 text-sm text-slate-900 font-medium"
+              />
             </div>
-            <button className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-200 shadow-md shadow-primary-500/25 hover:shadow-lg hover:shadow-primary-500/30 hover:-translate-y-0.5">
-              <Download className="h-5 w-5 mr-2" />
-              Export
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Default Workspace Currency</label>
+              <select
+                value={currency}
+                onChange={(e) => {
+                  setCurrency(e.target.value);
+                  toast.success(`Currency switched to ${e.target.value}`);
+                }}
+                className="w-full px-3.5 py-2 text-sm text-slate-900 font-bold"
+              >
+                <option value="INR">Indian Rupee (₹ INR)</option>
+                <option value="USD">US Dollar ($ USD)</option>
+                <option value="EUR">Euro (€ EUR)</option>
+                <option value="GBP">British Pound (£ GBP)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Primary Cold Chain Hub</label>
+              <input
+                type="text"
+                value={plantLocation}
+                onChange={(e) => setPlantLocation(e.target.value)}
+                className="w-full px-3.5 py-2 text-sm text-slate-900"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Default Recipe Margin %</label>
+              <input
+                type="number"
+                step="0.5"
+                value={defaultMargin}
+                onChange={(e) => setDefaultMargin(parseFloat(e.target.value) || 0)}
+                className="w-full px-3.5 py-2 text-sm text-slate-900 font-bold"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              className="inline-flex items-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-xs"
+            >
+              <Save className="h-4 w-4 mr-1.5" />
+              <span>Save Configuration</span>
             </button>
           </div>
-          
-          <div className="flex items-center justify-between p-6 border border-slate-200 rounded-xl hover:shadow-md transition-shadow bg-gradient-to-r from-slate-50 to-white">
+        </form>
+      </div>
+
+      {/* Backup & Sample Presets */}
+      <div className="fresh-card p-6 space-y-5">
+        <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+          <Sparkles className="h-4 w-4 text-emerald-600" />
+          <h2 className="text-sm font-bold text-slate-900">Data Management & Backup</h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3 flex flex-col justify-between">
             <div>
-              <h3 className="font-semibold text-slate-900">Import Data</h3>
-              <p className="text-sm text-slate-500">Import BOMs and materials from a file</p>
+              <h3 className="text-sm font-bold text-slate-900">Export Complete Database</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Download a full JSON snapshot of all recipes, BOMs, raw materials, labor tables, and settings.
+              </p>
             </div>
-            <button className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-secondary-500 to-secondary-600 text-white rounded-xl hover:from-secondary-600 hover:to-secondary-700 transition-all duration-200 shadow-md shadow-secondary-500/25 hover:shadow-lg hover:shadow-secondary-500/30 hover:-translate-y-0.5">
-              <Upload className="h-5 w-5 mr-2" />
-              Import
+            <button
+              onClick={handleBackupExport}
+              className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 text-xs font-bold transition-colors"
+            >
+              <Download className="h-4 w-4 mr-1.5" />
+              <span>Export Backup JSON</span>
+            </button>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3 flex flex-col justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Restore Akira Fresh Sample Data</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Reset all BOMs and materials back to default Akira Momos, Seekh Kebabs & Shipper presets.
+              </p>
+            </div>
+            <button
+              onClick={handleResetData}
+              className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 text-xs font-bold transition-colors"
+            >
+              <RotateCcw className="h-4 w-4 mr-1.5" />
+              <span>Reset to Sample Presets</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <button className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-200 shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5">
-          <Save className="h-5 w-5 mr-2" />
-          Save Settings
-        </button>
+      {/* Brand Attribution Card */}
+      <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950 to-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-bold">Akira Fresh D2C Platform</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          </div>
+          <p className="text-xs text-emerald-200/80">
+            Visit the official online storefront at akirafresh.in for gourmet ready-to-cook delicacies.
+          </p>
+        </div>
+        <a
+          href="https://akirafresh.in"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors"
+        >
+          <span>Open akirafresh.in</span>
+          <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+        </a>
       </div>
     </div>
   );

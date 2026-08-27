@@ -1,19 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { 
-  Save, 
   Plus, 
   Trash2, 
+  Save, 
   Download, 
-  Calculator as CalculatorIcon,
-  Package,
-  User,
-  Percent,
+  FileSpreadsheet, 
+  Calculator, 
+  DollarSign, 
+  Clock, 
+  TrendingUp, 
   Sparkles,
-  ArrowUpRight
+  Layers,
+  Percent,
+  CheckCircle,
+  AlertTriangle,
+  RotateCcw,
+  Flame,
+  Snowflake,
+  Package,
+  ArrowRight,
+  Info,
+  Sliders,
+  ChevronDown
 } from 'lucide-react';
+import { toast } from 'sonner';
 import useBOMStore from '../stores/bomStore';
 import { formatCurrency, generateId } from '../lib/utils';
 import { exportToExcel, exportToPDF } from '../lib/export';
@@ -23,159 +36,187 @@ const bomSchema = z.object({
   name: z.string().min(1, 'BOM name is required'),
   description: z.string().optional(),
   projectCode: z.string().optional(),
+  category: z.string().optional(),
+  batchQuantity: z.number().min(1, 'Batch quantity must be at least 1').optional(),
+  batchUnit: z.string().optional(),
+  storageCondition: z.string().optional(),
   overheadPercentage: z.number().min(0).max(100),
-  profitMargin: z.number().min(0).max(100),
-  items: z.array(z.object({
-    materialId: z.string(),
-    materialName: z.string().min(1, 'Material name is required'),
-    quantity: z.number().min(0.01, 'Quantity must be greater than 0'),
-    unit: z.string().min(1, 'Unit is required'),
-    costPerUnit: z.number().min(0, 'Cost must be non-negative'),
-    wastePercentage: z.number().min(0).max(100).optional(),
-  })),
-  laborItems: z.array(z.object({
-    laborId: z.string(),
-    laborName: z.string().min(1, 'Labor name is required'),
-    hours: z.number().min(0.01, 'Hours must be greater than 0'),
-    hourlyRate: z.number().min(0, 'Rate must be non-negative'),
-  })),
+  profitMargin: z.number().min(0).max(1000),
+  items: z.array(
+    z.object({
+      materialId: z.string().min(1, 'Material is required'),
+      materialName: z.string().min(1, 'Material name is required'),
+      quantity: z.number().min(0.001, 'Quantity must be greater than 0'),
+      unit: z.string().min(1, 'Unit is required'),
+      costPerUnit: z.number().min(0, 'Cost must be positive'),
+      wastePercentage: z.number().min(0).max(100).optional(),
+      category: z.string().optional(),
+    })
+  ).min(1, 'At least one ingredient or material is required'),
+  laborItems: z.array(
+    z.object({
+      laborId: z.string().min(1, 'Labor item is required'),
+      laborName: z.string().min(1, 'Labor name is required'),
+      hours: z.number().min(0.01, 'Hours must be greater than 0'),
+      hourlyRate: z.number().min(0, 'Hourly rate must be positive'),
+      operationType: z.string().optional(),
+    })
+  ),
 });
 
 const BOMCalculator: React.FC = () => {
-  const { materials, laborCosts, addBOM, currentBOM, setCurrentBOM, calculateBOMTotals } = useBOMStore();
-  
   const { 
-    register, 
-    handleSubmit, 
-    watch, 
+    boms, 
+    materials, 
+    laborCosts, 
+    currentBOM, 
+    addBOM, 
+    updateBOM, 
+    calculateBOMTotals,
+    setCurrentBOM,
+    duplicateBOM,
+    currency
+  } = useBOMStore();
+
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'materials' | 'labor' | 'overheads'>('materials');
+
+  const defaultValues: BOMFormData = {
+    name: currentBOM?.name || '',
+    description: currentBOM?.description || '',
+    projectCode: currentBOM?.projectCode || '',
+    category: currentBOM?.category || 'Food & Ready-to-Cook',
+    batchQuantity: currentBOM?.batchQuantity || 500,
+    batchUnit: currentBOM?.batchUnit || 'boxes',
+    storageCondition: currentBOM?.storageCondition || 'Frozen (-18°C)',
+    overheadPercentage: currentBOM?.overheadPercentage || 8.0,
+    profitMargin: currentBOM?.profitMargin || 25.0,
+    items: currentBOM?.items || [
+      {
+        materialId: materials[0]?.id || 'mat-1',
+        materialName: materials[0]?.name || 'Prime Chicken Breast Boneless Mince',
+        quantity: 50,
+        unit: materials[0]?.unit || 'kg',
+        costPerUnit: materials[0]?.costPerUnit || 240,
+        wastePercentage: 2,
+        category: materials[0]?.category || 'Proteins & Meats',
+      },
+    ],
+    laborItems: currentBOM?.laborItems || [
+      {
+        laborId: laborCosts[0]?.id || 'lab-1',
+        laborName: laborCosts[0]?.name || 'Meat Deboning & Precision Mincing',
+        hours: 5,
+        hourlyRate: laborCosts[0]?.hourlyRate || 220,
+        operationType: 'Preparation',
+      },
+    ],
+  };
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    watch,
     setValue,
-    formState: { errors } 
+    reset,
+    formState: { errors, isDirty },
   } = useForm<BOMFormData>({
-    resolver: zodResolver(bomSchema),
-    defaultValues: {
-      name: currentBOM?.name || '',
-      description: currentBOM?.description || '',
-      projectCode: currentBOM?.projectCode || '',
-      overheadPercentage: currentBOM?.overheadPercentage || 10,
-      profitMargin: currentBOM?.profitMargin || 15,
-      items: currentBOM?.items.map(item => ({
-        materialId: item.materialId,
-        materialName: item.materialName,
-        quantity: item.quantity,
-        unit: item.unit,
-        costPerUnit: item.costPerUnit,
-        wastePercentage: item.wastePercentage,
-      })) || [],
-      laborItems: currentBOM?.laborItems.map(item => ({
-        laborId: item.laborId,
-        laborName: item.laborName,
-        hours: item.hours,
-        hourlyRate: item.hourlyRate,
-      })) || [],
-    },
+    resolver: zodResolver(bomSchema) as any,
+    defaultValues,
+  });
+
+  const {
+    fields: itemFields,
+    append: appendItem,
+    remove: removeItem,
+  } = useFieldArray({
+    control,
+    name: 'items',
+  });
+
+  const {
+    fields: laborFields,
+    append: appendLabor,
+    remove: removeLabor,
+  } = useFieldArray({
+    control,
+    name: 'laborItems',
   });
 
   const watchedValues = watch();
   const calculatedTotals = calculateBOMTotals(watchedValues);
 
-  const addMaterialItem = () => {
-    const newItems = [...watchedValues.items, {
-      materialId: generateId(),
-      materialName: '',
-      quantity: 1,
-      unit: 'pcs',
-      costPerUnit: 0,
-      wastePercentage: 0,
-    }];
-    setValue('items', newItems);
+  // Sync form when currentBOM changes
+  useEffect(() => {
+    if (currentBOM) {
+      reset({
+        name: currentBOM.name,
+        description: currentBOM.description || '',
+        projectCode: currentBOM.projectCode || '',
+        category: currentBOM.category || 'Food & Ready-to-Cook',
+        batchQuantity: currentBOM.batchQuantity || 500,
+        batchUnit: currentBOM.batchUnit || 'boxes',
+        storageCondition: currentBOM.storageCondition || 'Frozen (-18°C)',
+        overheadPercentage: currentBOM.overheadPercentage,
+        profitMargin: currentBOM.profitMargin,
+        items: currentBOM.items,
+        laborItems: currentBOM.laborItems,
+      });
+    }
+  }, [currentBOM, reset]);
+
+  const handleMaterialSelect = (index: number, materialId: string) => {
+    const selectedMaterial = materials.find((m) => m.id === materialId);
+    if (selectedMaterial) {
+      setValue(`items.${index}.materialId`, selectedMaterial.id);
+      setValue(`items.${index}.materialName`, selectedMaterial.name);
+      setValue(`items.${index}.unit`, selectedMaterial.unit);
+      setValue(`items.${index}.costPerUnit`, selectedMaterial.costPerUnit);
+      setValue(`items.${index}.category`, selectedMaterial.category);
+    }
   };
 
-  const addLaborItem = () => {
-    const newLaborItems = [...watchedValues.laborItems, {
-      laborId: generateId(),
-      laborName: '',
-      hours: 1,
-      hourlyRate: 0,
-    }];
-    setValue('laborItems', newLaborItems);
+  const handleLaborSelect = (index: number, laborId: string) => {
+    const selectedLabor = laborCosts.find((l) => l.id === laborId);
+    if (selectedLabor) {
+      setValue(`laborItems.${index}.laborId`, selectedLabor.id);
+      setValue(`laborItems.${index}.laborName`, selectedLabor.name);
+      setValue(`laborItems.${index}.hourlyRate`, selectedLabor.hourlyRate);
+      setValue(`laborItems.${index}.operationType`, selectedLabor.category);
+    }
   };
 
-  const removeMaterialItem = (index: number) => {
-    const newItems = watchedValues.items.filter((_, i) => i !== index);
-    setValue('items', newItems);
-  };
-
-  const removeLaborItem = (index: number) => {
-    const newLaborItems = watchedValues.laborItems.filter((_, i) => i !== index);
-    setValue('laborItems', newLaborItems);
-  };
-
-  const handleExportExcel = () => {
-    const bom: BOM = {
-      id: currentBOM?.id || generateId(),
-      ...watchedValues,
-      items: watchedValues.items.map((item, index) => ({
-        ...item,
-        id: currentBOM?.items[index]?.id || generateId(),
-        totalCost: item.quantity * item.costPerUnit * (1 + (item.wastePercentage || 0) / 100),
+  const handleLoadTemplate = (preset: BOM) => {
+    reset({
+      name: `${preset.name} (Custom)`,
+      description: preset.description || '',
+      projectCode: preset.projectCode ? `${preset.projectCode}-C` : 'AF-CUSTOM',
+      category: preset.category || 'Food & Ready-to-Cook',
+      batchQuantity: preset.batchQuantity || 500,
+      batchUnit: preset.batchUnit || 'boxes',
+      storageCondition: preset.storageCondition || 'Frozen (-18°C)',
+      overheadPercentage: preset.overheadPercentage,
+      profitMargin: preset.profitMargin,
+      items: preset.items.map(it => ({
+        materialId: it.materialId,
+        materialName: it.materialName,
+        quantity: it.quantity,
+        unit: it.unit,
+        costPerUnit: it.costPerUnit,
+        wastePercentage: it.wastePercentage || 0,
+        category: it.category,
       })),
-      laborItems: watchedValues.laborItems.map((item, index) => ({
-        ...item,
-        id: currentBOM?.laborItems[index]?.id || generateId(),
-        totalCost: item.hours * item.hourlyRate,
+      laborItems: preset.laborItems.map(lb => ({
+        laborId: lb.laborId,
+        laborName: lb.laborName,
+        hours: lb.hours,
+        hourlyRate: lb.hourlyRate,
+        operationType: lb.operationType,
       })),
-      totalMaterialCost: calculatedTotals.totalMaterialCost || 0,
-      totalLaborCost: calculatedTotals.totalLaborCost || 0,
-      totalOverhead: calculatedTotals.totalOverhead || 0,
-      totalProfit: calculatedTotals.totalProfit || 0,
-      grandTotal: calculatedTotals.grandTotal || 0,
-      version: currentBOM?.version || '1.0',
-      createdAt: currentBOM?.createdAt || new Date(),
-      updatedAt: new Date(),
-      status: 'draft' as const,
-    };
-
-    const options: ExportOptions = {
-      format: 'excel',
-      includeCosts: true,
-      includeLabor: true,
-      includeSummary: true,
-    };
-    exportToExcel(bom, options);
-  };
-
-  const handleExportPDF = () => {
-    const bom: BOM = {
-      id: currentBOM?.id || generateId(),
-      ...watchedValues,
-      items: watchedValues.items.map((item, index) => ({
-        ...item,
-        id: currentBOM?.items[index]?.id || generateId(),
-        totalCost: item.quantity * item.costPerUnit * (1 + (item.wastePercentage || 0) / 100),
-      })),
-      laborItems: watchedValues.laborItems.map((item, index) => ({
-        ...item,
-        id: currentBOM?.laborItems[index]?.id || generateId(),
-        totalCost: item.hours * item.hourlyRate,
-      })),
-      totalMaterialCost: calculatedTotals.totalMaterialCost || 0,
-      totalLaborCost: calculatedTotals.totalLaborCost || 0,
-      totalOverhead: calculatedTotals.totalOverhead || 0,
-      totalProfit: calculatedTotals.totalProfit || 0,
-      grandTotal: calculatedTotals.grandTotal || 0,
-      version: currentBOM?.version || '1.0',
-      createdAt: currentBOM?.createdAt || new Date(),
-      updatedAt: new Date(),
-      status: 'draft' as const,
-    };
-
-    const options: ExportOptions = {
-      format: 'pdf',
-      includeCosts: true,
-      includeLabor: true,
-      includeSummary: true,
-    };
-    exportToPDF(bom, options);
+    });
+    setTemplateModalOpen(false);
+    toast.success(`Loaded template: ${preset.name}`);
   };
 
   const onSubmit = (data: BOMFormData) => {
@@ -197,391 +238,774 @@ const BOMCalculator: React.FC = () => {
       totalOverhead: calculatedTotals.totalOverhead || 0,
       totalProfit: calculatedTotals.totalProfit || 0,
       grandTotal: calculatedTotals.grandTotal || 0,
+      costPerUnit: calculatedTotals.costPerUnit || 0,
+      suggestedSellingPrice: calculatedTotals.suggestedSellingPrice || 0,
       version: currentBOM?.version || '1.0',
       createdAt: currentBOM?.createdAt || new Date(),
       updatedAt: new Date(),
-      status: 'draft' as const,
+      status: currentBOM?.status || 'active',
     };
-    
-    addBOM(bom);
-    setCurrentBOM(null);
-    alert('BOM saved successfully!');
+
+    if (currentBOM) {
+      updateBOM(currentBOM.id, bom);
+      toast.success('BOM updated successfully');
+    } else {
+      addBOM(bom);
+      setCurrentBOM(bom);
+      toast.success('New BOM created successfully');
+    }
   };
 
+  const handleExportExcel = () => {
+    const bomToExport: BOM = {
+      id: currentBOM?.id || generateId(),
+      ...watchedValues,
+      items: watchedValues.items.map((item, index) => ({
+        ...item,
+        id: currentBOM?.items[index]?.id || generateId(),
+        totalCost: item.quantity * item.costPerUnit * (1 + (item.wastePercentage || 0) / 100),
+      })),
+      laborItems: watchedValues.laborItems.map((item, index) => ({
+        ...item,
+        id: currentBOM?.laborItems[index]?.id || generateId(),
+        totalCost: item.hours * item.hourlyRate,
+      })),
+      totalMaterialCost: calculatedTotals.totalMaterialCost || 0,
+      totalLaborCost: calculatedTotals.totalLaborCost || 0,
+      totalOverhead: calculatedTotals.totalOverhead || 0,
+      totalProfit: calculatedTotals.totalProfit || 0,
+      grandTotal: calculatedTotals.grandTotal || 0,
+      costPerUnit: calculatedTotals.costPerUnit || 0,
+      suggestedSellingPrice: calculatedTotals.suggestedSellingPrice || 0,
+      version: currentBOM?.version || '1.0',
+      createdAt: currentBOM?.createdAt || new Date(),
+      updatedAt: new Date(),
+      status: currentBOM?.status || 'active',
+    };
+
+    exportToExcel(bomToExport, {
+      format: 'excel',
+      includeCosts: true,
+      includeLabor: true,
+      includeSummary: true,
+    });
+    toast.success('Excel exported successfully');
+  };
+
+  const handleExportPDF = () => {
+    const bomToExport: BOM = {
+      id: currentBOM?.id || generateId(),
+      ...watchedValues,
+      items: watchedValues.items.map((item, index) => ({
+        ...item,
+        id: currentBOM?.items[index]?.id || generateId(),
+        totalCost: item.quantity * item.costPerUnit * (1 + (item.wastePercentage || 0) / 100),
+      })),
+      laborItems: watchedValues.laborItems.map((item, index) => ({
+        ...item,
+        id: currentBOM?.laborItems[index]?.id || generateId(),
+        totalCost: item.hours * item.hourlyRate,
+      })),
+      totalMaterialCost: calculatedTotals.totalMaterialCost || 0,
+      totalLaborCost: calculatedTotals.totalLaborCost || 0,
+      totalOverhead: calculatedTotals.totalOverhead || 0,
+      totalProfit: calculatedTotals.totalProfit || 0,
+      grandTotal: calculatedTotals.grandTotal || 0,
+      costPerUnit: calculatedTotals.costPerUnit || 0,
+      suggestedSellingPrice: calculatedTotals.suggestedSellingPrice || 0,
+      version: currentBOM?.version || '1.0',
+      createdAt: currentBOM?.createdAt || new Date(),
+      updatedAt: new Date(),
+      status: currentBOM?.status || 'active',
+    };
+
+    exportToPDF(bomToExport, {
+      format: 'pdf',
+      includeCosts: true,
+      includeLabor: true,
+      includeSummary: true,
+    });
+    toast.success('PDF report generated');
+  };
+
+  const batchQty = watchedValues.batchQuantity || 1;
+  const unitCost = (calculatedTotals.grandTotal || 0) / batchQty;
+  const rawCostRatio = calculatedTotals.grandTotal ? ((calculatedTotals.totalMaterialCost || 0) / calculatedTotals.grandTotal) * 100 : 0;
+  const laborCostRatio = calculatedTotals.grandTotal ? ((calculatedTotals.totalLaborCost || 0) / calculatedTotals.grandTotal) * 100 : 0;
+  const overheadCostRatio = calculatedTotals.grandTotal ? ((calculatedTotals.totalOverhead || 0) / calculatedTotals.grandTotal) * 100 : 0;
+  const profitCostRatio = calculatedTotals.grandTotal ? ((calculatedTotals.totalProfit || 0) / calculatedTotals.grandTotal) * 100 : 0;
+
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-slide-up">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="bg-gradient-to-br from-primary-500 to-primary-600 p-2 rounded-xl shadow-lg">
-            <CalculatorIcon className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-              BOM Calculator
-            </h1>
-            <p className="mt-1 text-slate-500">Create and manage premium Bill of Materials</p>
+    <div className="space-y-6 pb-16 animate-fade-in">
+      {/* Top Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
+              <Calculator className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight font-display">
+                  {currentBOM ? `Edit BOM: ${currentBOM.name}` : 'BOM Recipe & Cost Calculator'}
+                </h1>
+                {currentBOM && (
+                  <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">
+                    v{currentBOM.version}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500">Live ingredient yield calculations, blast freezing labor, and unit economics.</p>
+            </div>
           </div>
         </div>
-        <div className="flex space-x-3">
+
+        <div className="flex items-center flex-wrap gap-2">
           <button
-            onClick={() => setCurrentBOM(null)}
-            className="px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors text-slate-600 hover:text-slate-900"
+            type="button"
+            onClick={() => setTemplateModalOpen(true)}
+            className="inline-flex items-center px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors"
           >
-            Clear
+            <Sparkles className="h-4 w-4 mr-1.5 text-emerald-600" />
+            <span>Load Preset Recipe</span>
           </button>
+
           <button
+            type="button"
+            onClick={() => {
+              setCurrentBOM(null);
+              reset(defaultValues);
+              toast.info('Calculator reset to blank state');
+            }}
+            className="inline-flex items-center px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-colors"
+            title="Reset Form"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
             onClick={handleExportExcel}
-            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-secondary-500 to-secondary-600 text-white rounded-xl hover:from-secondary-600 hover:to-secondary-700 transition-all duration-200 shadow-md shadow-secondary-500/25 hover:shadow-lg hover:shadow-secondary-500/30 hover:-translate-y-0.5"
+            className="inline-flex items-center px-3.5 py-2 rounded-xl border border-emerald-200 hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition-colors"
           >
-            <Download className="h-5 w-5 mr-2" />
-            Export Excel
+            <FileSpreadsheet className="h-4 w-4 mr-1.5 text-emerald-600" />
+            <span>Excel</span>
           </button>
+
           <button
+            type="button"
             onClick={handleExportPDF}
-            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-accent-500 to-accent-600 text-white rounded-xl hover:from-accent-600 hover:to-accent-700 transition-all duration-200 shadow-md shadow-accent-500/25 hover:shadow-lg hover:shadow-accent-500/30 hover:-translate-y-0.5"
+            className="inline-flex items-center px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-bold transition-colors"
           >
-            <Download className="h-5 w-5 mr-2" />
-            Export PDF
+            <Download className="h-4 w-4 mr-1.5 text-slate-600" />
+            <span>PDF</span>
           </button>
+
           <button
+            type="button"
             onClick={handleSubmit(onSubmit)}
-            className="inline-flex items-center px-6 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-200 shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5"
+            className="inline-flex items-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-extrabold shadow-sm transition-colors"
           >
-            <Save className="h-5 w-5 mr-2" />
-            Save BOM
+            <Save className="h-4 w-4 mr-1.5" />
+            <span>Save BOM</span>
           </button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Basic Information */}
-        <div className="bg-white rounded-2xl shadow-premium border border-slate-100 p-8">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-2 rounded-lg">
-              <Sparkles className="h-5 w-5 text-primary-600" />
-            </div>
-            <h2 className="text-xl font-semibold text-slate-900">Basic Information</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                BOM Name *
-              </label>
-              <input
-                {...register('name')}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all duration-200"
-                placeholder="Enter BOM name"
-              />
-              {errors.name && (
-                <p className="mt-2 text-sm text-red-500">{errors.name.message}</p>
-              )}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Project Code
-              </label>
-              <input
-                {...register('projectCode')}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all duration-200"
-                placeholder="Enter project code"
-              />
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Description
-              </label>
-              <textarea
-                {...register('description')}
-                rows={4}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all duration-200 resize-none"
-                placeholder="Enter BOM description"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Materials */}
-        <div className="bg-white rounded-2xl shadow-premium border border-slate-100 p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 p-2 rounded-lg">
-                <Package className="h-5 w-5 text-secondary-600" />
+      <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left 2-Columns: Recipe Details & Tables */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* General & Batch Configuration Card */}
+          <div className="fresh-card p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center space-x-2">
+                <Flame className="h-4 w-4 text-emerald-600" />
+                <h2 className="text-sm font-bold text-slate-900">Batch & Product Specification</h2>
               </div>
-              <h2 className="text-xl font-semibold text-slate-900">Materials</h2>
+              <span className="text-[11px] font-semibold text-slate-400">Step 1 of 3</span>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Product / Recipe BOM Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  {...register('name')}
+                  type="text"
+                  placeholder="e.g. Akira Gourmet Chicken Cheese Momos"
+                  className="w-full px-3.5 py-2 text-sm text-slate-900 font-medium"
+                />
+                {errors.name && <p className="text-xs text-rose-500 mt-1">{errors.name.message}</p>}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Project / SKU Code</label>
+                <input
+                  {...register('projectCode')}
+                  type="text"
+                  placeholder="e.g. AF-MOM-001"
+                  className="w-full px-3.5 py-2 text-sm text-slate-900 font-medium font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Category</label>
+                <select
+                  {...register('category')}
+                  className="w-full px-3.5 py-2 text-sm text-slate-900 font-medium"
+                >
+                  <option value="Food & Ready-to-Cook">Food & Ready-to-Cook</option>
+                  <option value="Meat & Poultry">Meat & Poultry</option>
+                  <option value="Cold Chain & Logistics">Cold Chain & Logistics</option>
+                  <option value="Packaging Assembly">Packaging Assembly</option>
+                  <option value="Industrial Parts">Industrial Parts</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Batch Output Size <span className="text-slate-400 font-normal">(Units per batch run)</span>
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    {...register('batchQuantity', { valueAsNumber: true })}
+                    type="number"
+                    min="1"
+                    className="w-2/3 px-3.5 py-2 text-sm text-slate-900 font-bold"
+                  />
+                  <input
+                    {...register('batchUnit')}
+                    type="text"
+                    placeholder="boxes / pcs"
+                    className="w-1/3 px-3 py-2 text-sm text-slate-700 font-medium text-center"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Storage Condition</label>
+                <select
+                  {...register('storageCondition')}
+                  className="w-full px-3.5 py-2 text-sm text-slate-900 font-medium"
+                >
+                  <option value="Frozen (-18°C)">Frozen (-18°C) • Blast Freezing</option>
+                  <option value="Chilled (2-4°C)">Chilled (2-4°C) • Cold Room</option>
+                  <option value="Ambient">Ambient • Dry Storage</option>
+                </select>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 mb-1">Recipe / Production Notes</label>
+                <input
+                  {...register('description')}
+                  type="text"
+                  placeholder="e.g. Requires -40°C IQF tunnel freeze for 25 mins prior to nitrogen packaging."
+                  className="w-full px-3.5 py-2 text-sm text-slate-700"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Tab Navigation for Composition Details */}
+          <div className="flex border-b border-slate-200 space-x-2">
             <button
               type="button"
-              onClick={addMaterialItem}
-              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-secondary-500 to-secondary-600 text-white rounded-xl hover:from-secondary-600 hover:to-secondary-700 transition-all duration-200 shadow-md shadow-secondary-500/25 hover:shadow-lg hover:shadow-secondary-500/30 hover:-translate-y-0.5"
+              onClick={() => setActiveTab('materials')}
+              className={`pb-3 px-3 text-xs font-extrabold flex items-center space-x-2 border-b-2 transition-colors ${
+                activeTab === 'materials'
+                  ? 'border-emerald-600 text-emerald-800'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
+              }`}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Material
+              <Package className="h-4 w-4" />
+              <span>1. Ingredients & Materials ({itemFields.length})</span>
             </button>
-          </div>
-          
-          <div className="space-y-4">
-            {watchedValues.items.map((item, index) => (
-              <div key={index} className="border border-slate-200 rounded-xl p-6 space-y-4 bg-gradient-to-br from-slate-50 to-white hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-gradient-to-br from-secondary-100 to-secondary-50 p-2 rounded-lg">
-                      <Package className="h-5 w-5 text-secondary-600" />
-                    </div>
-                    <span className="text-sm font-medium text-slate-700">Material {index + 1}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeMaterialItem(index)}
-                    className="text-red-400 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-2">
-                      Material Name *
-                    </label>
-                    <input
-                      {...register(`items.${index}.materialName`)}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-secondary-500/20 focus:border-secondary-500 transition-all duration-200 text-sm"
-                      placeholder="Material name"
-                    />
-                    {errors.items?.[index]?.materialName && (
-                      <p className="mt-1 text-xs text-red-500">{errors.items[index]?.materialName?.message}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-2">
-                      Quantity *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      {...register(`items.${index}.quantity`, { valueAsNumber: true })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-secondary-500/20 focus:border-secondary-500 transition-all duration-200 text-sm"
-                      placeholder="0.00"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-2">
-                      Unit *
-                    </label>
-                    <input
-                      {...register(`items.${index}.unit`)}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-secondary-500/20 focus:border-secondary-500 transition-all duration-200 text-sm"
-                      placeholder="pcs, kg, m"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-2">
-                      Cost per Unit *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      {...register(`items.${index}.costPerUnit`, { valueAsNumber: true })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-secondary-500/20 focus:border-secondary-500 transition-all duration-200 text-sm"
-                      placeholder="0.00"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-2">
-                      Waste %
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.1"
-                        {...register(`items.${index}.wastePercentage`, { valueAsNumber: true })}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-secondary-500/20 focus:border-secondary-500 transition-all duration-200 text-sm"
-                        placeholder="0"
-                      />
-                      <Percent className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-end">
-                    <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 p-3 rounded-lg">
-                      <p className="text-xs text-slate-600 mb-1">Total</p>
-                      <p className="text-sm font-semibold text-secondary-700">
-                        {formatCurrency(item.quantity * item.costPerUnit * (1 + (item.wastePercentage || 0) / 100))}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Labor Costs */}
-        <div className="bg-white rounded-2xl shadow-premium border border-slate-100 p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <div className="bg-gradient-to-br from-accent-50 to-accent-100 p-2 rounded-lg">
-                <User className="h-5 w-5 text-accent-600" />
-              </div>
-              <h2 className="text-xl font-semibold text-slate-900">Labor Costs</h2>
-            </div>
             <button
               type="button"
-              onClick={addLaborItem}
-              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-accent-500 to-accent-600 text-white rounded-xl hover:from-accent-600 hover:to-accent-700 transition-all duration-200 shadow-md shadow-accent-500/25 hover:shadow-lg hover:shadow-accent-500/30 hover:-translate-y-0.5"
+              onClick={() => setActiveTab('labor')}
+              className={`pb-3 px-3 text-xs font-extrabold flex items-center space-x-2 border-b-2 transition-colors ${
+                activeTab === 'labor'
+                  ? 'border-emerald-600 text-emerald-800'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
+              }`}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Labor
+              <Clock className="h-4 w-4" />
+              <span>2. Labor & Processing Operations ({laborFields.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('overheads')}
+              className={`pb-3 px-3 text-xs font-extrabold flex items-center space-x-2 border-b-2 transition-colors ${
+                activeTab === 'overheads'
+                  ? 'border-emerald-600 text-emerald-800'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <Sliders className="h-4 w-4" />
+              <span>3. Overheads & Margin ({watchedValues.profitMargin}%)</span>
             </button>
           </div>
-          
-          <div className="space-y-4">
-            {watchedValues.laborItems.map((item, index) => (
-              <div key={index} className="border border-slate-200 rounded-xl p-6 space-y-4 bg-gradient-to-br from-slate-50 to-white hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-gradient-to-br from-accent-100 to-accent-50 p-2 rounded-lg">
-                      <User className="h-5 w-5 text-accent-600" />
-                    </div>
-                    <span className="text-sm font-medium text-slate-700">Labor {index + 1}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeLaborItem(index)}
-                    className="text-red-400 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
+
+          {/* Tab 1: Ingredients & Raw Materials */}
+          {activeTab === 'materials' && (
+            <div className="fresh-card p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Raw Ingredients & Packaging Components</h3>
+                  <p className="text-xs text-slate-500">Pick from inventory or input custom items with scrap/waste % allowance.</p>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-2">
-                      Labor Type *
-                    </label>
-                    <input
-                      {...register(`laborItems.${index}.laborName`)}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-all duration-200 text-sm"
-                      placeholder="e.g., Assembly, Installation"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-2">
-                      Hours *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      {...register(`laborItems.${index}.hours`, { valueAsNumber: true })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-all duration-200 text-sm"
-                      placeholder="0.00"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-2">
-                      Hourly Rate *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      {...register(`laborItems.${index}.hourlyRate`, { valueAsNumber: true })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-all duration-200 text-sm"
-                      placeholder="0.00"
-                    />
-                  </div>
-                  
-                  <div className="md:col-span-3 flex items-end">
-                    <div className="bg-gradient-to-br from-accent-50 to-accent-100 p-3 rounded-lg">
-                      <p className="text-xs text-slate-600 mb-1">Total</p>
-                      <p className="text-sm font-semibold text-accent-700">
-                        {formatCurrency(item.hours * item.hourlyRate)}
-                      </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    appendItem({
+                      materialId: materials[0]?.id || generateId(),
+                      materialName: materials[0]?.name || 'New Ingredient',
+                      quantity: 1,
+                      unit: materials[0]?.unit || 'kg',
+                      costPerUnit: materials[0]?.costPerUnit || 100,
+                      wastePercentage: 0,
+                      category: materials[0]?.category || 'Proteins & Meats',
+                    })
+                  }
+                  className="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors border border-emerald-200/80"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  <span>Add Line Item</span>
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {itemFields.map((field, index) => {
+                  const item = watchedValues.items?.[index];
+                  const rowCost = (item?.quantity || 0) * (item?.costPerUnit || 0) * (1 + (item?.wastePercentage || 0) / 100);
+
+                  return (
+                    <div
+                      key={field.id}
+                      className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:border-emerald-300 transition-all space-y-3"
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                        {/* Material Selector / Name */}
+                        <div className="sm:col-span-5">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            Ingredient / Material
+                          </label>
+                          <select
+                            value={item?.materialId || ''}
+                            onChange={(e) => handleMaterialSelect(index, e.target.value)}
+                            className="w-full px-2.5 py-1.5 text-xs text-slate-900 font-semibold"
+                          >
+                            <option value="">-- Choose from Inventory --</option>
+                            {materials.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name} ({m.category} • {formatCurrency(m.costPerUnit, currency)}/{m.unit})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Quantity */}
+                        <div className="sm:col-span-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            Batch Qty
+                          </label>
+                          <div className="flex items-center space-x-1">
+                            <input
+                              {...register(`items.${index}.quantity`, { valueAsNumber: true })}
+                              type="number"
+                              step="0.01"
+                              min="0.001"
+                              className="w-full px-2 py-1.5 text-xs text-slate-900 font-bold"
+                            />
+                            <span className="text-[10px] font-bold text-slate-500 w-8">{item?.unit}</span>
+                          </div>
+                        </div>
+
+                        {/* Unit Cost */}
+                        <div className="sm:col-span-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            Rate / Unit
+                          </label>
+                          <input
+                            {...register(`items.${index}.costPerUnit`, { valueAsNumber: true })}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            className="w-full px-2 py-1.5 text-xs text-slate-900 font-medium"
+                          />
+                        </div>
+
+                        {/* Waste % */}
+                        <div className="sm:col-span-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            Scrap / Waste %
+                          </label>
+                          <input
+                            {...register(`items.${index}.wastePercentage`, { valueAsNumber: true })}
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            max="100"
+                            placeholder="0%"
+                            className="w-full px-2 py-1.5 text-xs text-slate-700"
+                          />
+                        </div>
+
+                        {/* Actions & Row Total */}
+                        <div className="sm:col-span-1 flex items-center justify-end">
+                          <button
+                            type="button"
+                            onClick={() => removeItem(index)}
+                            disabled={itemFields.length <= 1}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-30"
+                            title="Remove Line"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/50">
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          {item?.category && (
+                            <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600 font-semibold mr-2">
+                              {item.category}
+                            </span>
+                          )}
+                          Line Total (with {item?.wastePercentage || 0}% allowance):
+                        </span>
+                        <span className="font-bold text-slate-900 font-mono">
+                          {formatCurrency(rowCost, currency)}
+                        </span>
+                      </div>
                     </div>
+                  );
+                })}
+              </div>
+
+              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center justify-between text-xs font-bold text-emerald-900">
+                <span>Total Raw Materials & Ingredients Cost</span>
+                <span className="text-sm font-extrabold">{formatCurrency(calculatedTotals.totalMaterialCost || 0, currency)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 2: Labor & Processing */}
+          {activeTab === 'labor' && (
+            <div className="fresh-card p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Labor & Machine Operations</h3>
+                  <p className="text-xs text-slate-500">Mincing, dumpling folding, blast freezing, nitrogen flush, quality inspections.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    appendLabor({
+                      laborId: laborCosts[0]?.id || generateId(),
+                      laborName: laborCosts[0]?.name || 'Manual Operation',
+                      hours: 2,
+                      hourlyRate: laborCosts[0]?.hourlyRate || 180,
+                      operationType: 'General Processing',
+                    })
+                  }
+                  className="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors border border-emerald-200/80"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  <span>Add Operation</span>
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {laborFields.map((field, index) => {
+                  const labor = watchedValues.laborItems?.[index];
+                  const rowLaborCost = (labor?.hours || 0) * (labor?.hourlyRate || 0);
+
+                  return (
+                    <div
+                      key={field.id}
+                      className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:border-emerald-300 transition-all space-y-3"
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                        <div className="sm:col-span-6">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            Operation / Role
+                          </label>
+                          <select
+                            value={labor?.laborId || ''}
+                            onChange={(e) => handleLaborSelect(index, e.target.value)}
+                            className="w-full px-2.5 py-1.5 text-xs text-slate-900 font-semibold"
+                          >
+                            <option value="">-- Choose Processing Operation --</option>
+                            {laborCosts.map((l) => (
+                              <option key={l.id} value={l.id}>
+                                {l.name} ({l.category} • {formatCurrency(l.hourlyRate, currency)}/hr)
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            Total Hours
+                          </label>
+                          <input
+                            {...register(`laborItems.${index}.hours`, { valueAsNumber: true })}
+                            type="number"
+                            step="0.25"
+                            min="0.1"
+                            className="w-full px-2 py-1.5 text-xs text-slate-900 font-bold"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-3">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            Hourly Rate ({currency})
+                          </label>
+                          <input
+                            {...register(`laborItems.${index}.hourlyRate`, { valueAsNumber: true })}
+                            type="number"
+                            step="10"
+                            min="0"
+                            className="w-full px-2 py-1.5 text-xs text-slate-900 font-medium"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-1 flex items-center justify-end">
+                          <button
+                            type="button"
+                            onClick={() => removeLabor(index)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Remove Operation"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/50">
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          {labor?.hours || 0} hrs @ {formatCurrency(labor?.hourlyRate || 0, currency)}/hr
+                        </span>
+                        <span className="font-bold text-slate-900 font-mono">
+                          {formatCurrency(rowLaborCost, currency)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-center justify-between text-xs font-bold text-blue-900">
+                <span>Total Labor & Processing Cost</span>
+                <span className="text-sm font-extrabold">{formatCurrency(calculatedTotals.totalLaborCost || 0, currency)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 3: Overheads & Margins */}
+          {activeTab === 'overheads' && (
+            <div className="fresh-card p-5 space-y-5">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Overhead, Cold-Chain Utilities & Profit Markup</h3>
+                <p className="text-xs text-slate-500">Fine-tune power (blast freezer refrigeration), QA compliance, and target gross margin.</p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">Overhead & Facility Utilities %</p>
+                      <p className="text-[11px] text-slate-500">Refrigeration power, factory rent, quality inspections.</p>
+                    </div>
+                    <span className="text-base font-extrabold text-slate-900 font-mono">
+                      {watchedValues.overheadPercentage}%
+                    </span>
+                  </div>
+                  <input
+                    {...register('overheadPercentage', { valueAsNumber: true })}
+                    type="range"
+                    min="0"
+                    max="30"
+                    step="0.5"
+                    className="w-full accent-emerald-600 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                    <span>0% (Lean)</span>
+                    <span>10% (Standard Food Plant)</span>
+                    <span>30% (High Utility)</span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">Target Profit Margin %</p>
+                      <p className="text-[11px] text-slate-500">Markup applied to total production costs to determine selling price.</p>
+                    </div>
+                    <span className="text-base font-extrabold text-emerald-700 font-mono">
+                      +{watchedValues.profitMargin}%
+                    </span>
+                  </div>
+                  <input
+                    {...register('profitMargin', { valueAsNumber: true })}
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    className="w-full accent-emerald-600 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                    <span>0% (At Cost)</span>
+                    <span>25% (Wholesale Target)</span>
+                    <span>50%+ (Premium Retail)</span>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* Cost Summary */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-premium-lg p-8 text-white">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <div className="bg-white/10 p-2 rounded-lg backdrop-blur-sm">
-                <CalculatorIcon className="h-5 w-5 text-white" />
+        {/* Right Sticky Sidebar: Live Economics & Pricing Summary */}
+        <div className="space-y-5">
+          <div className="fresh-card p-5 bg-white border-emerald-200/80 shadow-premium sticky top-20 space-y-5">
+            {/* Header Badge */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Live Economics</span>
               </div>
-              <h2 className="text-xl font-semibold">Cost Summary</h2>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Overhead Percentage
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.1"
-                  {...register('overheadPercentage', { valueAsNumber: true })}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-white/20 focus:border-white/40 text-white placeholder-slate-400 backdrop-blur-sm transition-all duration-200"
-                />
-                <Percent className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Profit Margin
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.1"
-                  {...register('profitMargin', { valueAsNumber: true })}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-white/20 focus:border-white/40 text-white placeholder-slate-400 backdrop-blur-sm transition-all duration-200"
-                />
-                <Percent className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="space-y-4 pt-6 border-t border-white/10">
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-300">Total Material Cost</span>
-              <span className="font-medium text-white">{formatCurrency(calculatedTotals.totalMaterialCost || 0)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-300">Total Labor Cost</span>
-              <span className="font-medium text-white">{formatCurrency(calculatedTotals.totalLaborCost || 0)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-300">Overhead ({watchedValues.overheadPercentage}%)</span>
-              <span className="font-medium text-white">{formatCurrency(calculatedTotals.totalOverhead || 0)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-300">Profit Margin ({watchedValues.profitMargin}%)</span>
-              <span className="font-medium text-white">{formatCurrency(calculatedTotals.totalProfit || 0)}</span>
-            </div>
-            <div className="flex justify-between text-xl font-bold pt-4 border-t border-white/10">
-              <span className="text-white">Grand Total</span>
-              <span className="bg-gradient-to-r from-primary-400 to-premium-gold-400 bg-clip-text text-transparent">
-                {formatCurrency(calculatedTotals.grandTotal || 0)}
+              <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                Batch: {watchedValues.batchQuantity || 1} {watchedValues.batchUnit || 'units'}
               </span>
             </div>
+
+            {/* Grand Total Hero */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 text-white shadow-md space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Total Batch Cost & Margin</span>
+              <p className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-white">
+                {formatCurrency(calculatedTotals.grandTotal || 0, currency)}
+              </p>
+              <div className="pt-2 border-t border-emerald-900/60 flex items-center justify-between text-xs text-emerald-200/90">
+                <span>Cost Per {watchedValues.batchUnit || 'Unit'}:</span>
+                <span className="font-bold text-white text-sm">
+                  {formatCurrency(unitCost, currency)}
+                </span>
+              </div>
+            </div>
+
+            {/* Visual Cost Composition Bar */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                <span>Cost Composition</span>
+                <span>100%</span>
+              </div>
+              <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                <div style={{ width: `${rawCostRatio}%` }} className="bg-emerald-600" title={`Materials: ${rawCostRatio.toFixed(1)}%`} />
+                <div style={{ width: `${laborCostRatio}%` }} className="bg-sky-500" title={`Labor: ${laborCostRatio.toFixed(1)}%`} />
+                <div style={{ width: `${overheadCostRatio}%` }} className="bg-amber-500" title={`Overheads: ${overheadCostRatio.toFixed(1)}%`} />
+                <div style={{ width: `${profitCostRatio}%` }} className="bg-emerald-400" title={`Profit: ${profitCostRatio.toFixed(1)}%`} />
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 pt-1">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-600" /> Ingredients ({rawCostRatio.toFixed(0)}%)</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-sky-500" /> Labor ({laborCostRatio.toFixed(0)}%)</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> Overheads ({overheadCostRatio.toFixed(0)}%)</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Net Profit ({profitCostRatio.toFixed(0)}%)</span>
+              </div>
+            </div>
+
+            {/* Detailed Breakdown List */}
+            <div className="space-y-2.5 pt-2 border-t border-slate-100 text-xs">
+              <div className="flex justify-between text-slate-600">
+                <span>Raw Materials & Packaging</span>
+                <span className="font-bold text-slate-900">{formatCurrency(calculatedTotals.totalMaterialCost || 0, currency)}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Labor & Processing</span>
+                <span className="font-bold text-slate-900">{formatCurrency(calculatedTotals.totalLaborCost || 0, currency)}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Overhead ({watchedValues.overheadPercentage}%)</span>
+                <span className="font-bold text-slate-900">{formatCurrency(calculatedTotals.totalOverhead || 0, currency)}</span>
+              </div>
+              <div className="flex justify-between text-emerald-700 font-semibold pt-1 border-t border-dashed border-slate-200">
+                <span>Net Profit Markup ({watchedValues.profitMargin}%)</span>
+                <span className="font-extrabold">{formatCurrency(calculatedTotals.totalProfit || 0, currency)}</span>
+              </div>
+            </div>
+
+            {/* Suggested Selling Pricing */}
+            <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-900">Recommended Wholesale Price</span>
+                <span className="text-sm font-extrabold text-emerald-800 font-mono">
+                  {formatCurrency(unitCost, currency)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-600 text-xs">
+                <span>Suggested Retail MRP (1.35x)</span>
+                <span className="font-bold text-slate-900">
+                  {formatCurrency(unitCost * 1.35, currency)}
+                </span>
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm shadow-md shadow-emerald-600/20 transition-all hover:scale-[1.01]"
+            >
+              <Save className="h-4 w-4" />
+              <span>{currentBOM ? 'Update BOM & Save' : 'Save as Active BOM'}</span>
+            </button>
           </div>
         </div>
       </form>
+
+      {/* Preset Recipe Modal */}
+      {templateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setTemplateModalOpen(false)} />
+          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 z-10 animate-slide-up space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Load Akira Fresh Recipe Preset</h3>
+                <p className="text-xs text-slate-500">Select a pre-configured BOM to quickly calculate custom batch yields.</p>
+              </div>
+              <button
+                onClick={() => setTemplateModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
+              {boms.map((preset) => (
+                <div
+                  key={preset.id}
+                  onClick={() => handleLoadTemplate(preset)}
+                  className="p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50 border border-slate-200/80 hover:border-emerald-300 cursor-pointer transition-all space-y-2 group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-slate-400 group-hover:text-emerald-700">{preset.projectCode || 'AF-BOM'}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      {preset.batchQuantity} {preset.batchUnit}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-900">{preset.name}</h4>
+                  <p className="text-xs text-slate-500 line-clamp-2">{preset.description}</p>
+                  <div className="pt-2 flex items-center justify-between text-xs text-emerald-700 font-bold border-t border-slate-200/50">
+                    <span>{formatCurrency(preset.grandTotal, currency)}</span>
+                    <span>Use Template →</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

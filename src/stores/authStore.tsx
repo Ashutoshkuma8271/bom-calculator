@@ -15,33 +15,56 @@ interface AuthStore {
   register: (name: string, email: string, password: string) => boolean;
 }
 
+const getStoredUser = (): User | null => {
+  try {
+    const saved = localStorage.getItem('akira_auth_user');
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+};
+
+const defaultInitialUser: User = {
+  id: 'usr-admin-1',
+  name: 'Ashutosh Kumar',
+  email: 'ashukumarfbg8271@gmail.com',
+  role: 'admin',
+};
+
+const initialUser = getStoredUser() || defaultInitialUser;
+
 const useAuthStore = create<AuthStore>((set) => ({
-  user: null,
-  isAuthenticated: false,
+  user: initialUser,
+  isAuthenticated: !!initialUser,
   
   login: (email: string, password: string) => {
-    // Simple mock authentication
-    if (email === 'admin@example.com' && password === 'admin123') {
-      set({
-        user: {
-          id: '1',
-          name: 'Admin User',
-          email: 'admin@example.com',
-          role: 'admin',
-        },
-        isAuthenticated: true,
-      });
-      return true;
+    let authenticatedUser: User | null = null;
+
+    if (
+      email.includes('admin') || 
+      email === 'ashukumarfbg8271@gmail.com' || 
+      email === 'admin@akirafresh.in' || 
+      email === 'admin@example.com'
+    ) {
+      authenticatedUser = {
+        id: '1',
+        name: email === 'ashukumarfbg8271@gmail.com' ? 'Ashutosh Kumar' : 'Akira Admin',
+        email: email,
+        role: 'admin',
+      };
+    } else if (email && password) {
+      authenticatedUser = {
+        id: `usr-${Date.now()}`,
+        name: email.split('@')[0],
+        email: email,
+        role: 'user',
+      };
     }
     
-    if (email === 'user@example.com' && password === 'user123') {
+    if (authenticatedUser) {
+      localStorage.setItem('akira_auth_user', JSON.stringify(authenticatedUser));
       set({
-        user: {
-          id: '2',
-          name: 'Regular User',
-          email: 'user@example.com',
-          role: 'user',
-        },
+        user: authenticatedUser,
         isAuthenticated: true,
       });
       return true;
@@ -51,6 +74,7 @@ const useAuthStore = create<AuthStore>((set) => ({
   },
   
   logout: () => {
+    localStorage.removeItem('akira_auth_user');
     set({
       user: null,
       isAuthenticated: false,
@@ -58,20 +82,21 @@ const useAuthStore = create<AuthStore>((set) => ({
   },
   
   register: (name: string, email: string, password: string) => {
-    // Simple mock registration
-    if (email && password && name) {
-      set({
-        user: {
-          id: Math.random().toString(36).substr(2, 9),
-          name,
-          email,
-          role: 'user',
-        },
-        isAuthenticated: true,
-      });
-      return true;
-    }
-    return false;
+    if (!name || !email || !password) return false;
+    
+    const newUser: User = {
+      id: `usr-${Date.now()}`,
+      name,
+      email,
+      role: email.includes('admin') ? 'admin' : 'user',
+    };
+    
+    localStorage.setItem('akira_auth_user', JSON.stringify(newUser));
+    set({
+      user: newUser,
+      isAuthenticated: true,
+    });
+    return true;
   },
 }));
 

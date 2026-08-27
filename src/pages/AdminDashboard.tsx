@@ -1,205 +1,135 @@
 import React from 'react';
-import { Shield, Users, Settings, Activity, AlertTriangle, Sparkles, ArrowUpRight } from 'lucide-react';
+import { Shield, Users, Settings, Activity, AlertTriangle, Sparkles, ArrowUpRight, CheckCircle2, Flame, Snowflake } from 'lucide-react';
 import useAuthStore from '../stores/authStore';
 import useBOMStore from '../stores/bomStore';
 import { formatCurrency } from '../lib/utils';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuthStore();
-  const { boms, materials } = useBOMStore();
+  const { boms, materials, currency } = useBOMStore();
 
   if (user?.role !== 'admin') {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="bg-gradient-to-br from-slate-100 to-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Shield className="h-10 w-10 text-slate-300" />
-          </div>
-          <h2 className="text-xl font-semibold text-slate-900">Access Denied</h2>
-          <p className="text-slate-500 mt-2">You don't have permission to access this page.</p>
+      <div className="fresh-card p-12 text-center max-w-md mx-auto my-12 space-y-4">
+        <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+          <Shield className="h-8 w-8 text-slate-400" />
         </div>
+        <h2 className="text-lg font-bold text-slate-900">Admin Privileges Required</h2>
+        <p className="text-xs text-slate-500">Sign in with an admin role to access enterprise user controls and system auditing.</p>
       </div>
     );
   }
 
   const adminStats = [
     {
-      name: 'Total Users',
-      value: '2',
+      name: 'System Users',
+      value: '3 Team Members',
       icon: Users,
-      gradient: 'from-primary-500 to-primary-600',
-      bgGradient: 'from-primary-50 to-primary-100',
-      description: 'Active users in system',
+      bg: 'bg-emerald-50 text-emerald-700',
+      description: 'Production managers & QA admins',
     },
     {
-      name: 'Total BOMs',
+      name: 'Registered BOMs',
       value: boms.length.toString(),
       icon: Activity,
-      gradient: 'from-secondary-500 to-secondary-600',
-      bgGradient: 'from-secondary-50 to-secondary-100',
-      description: 'Bill of Materials created',
+      bg: 'bg-blue-50 text-blue-700',
+      description: 'Active recipe costings',
     },
     {
-      name: 'Materials',
+      name: 'Raw Materials & Packaging',
       value: materials.length.toString(),
       icon: Settings,
-      gradient: 'from-accent-500 to-accent-600',
-      bgGradient: 'from-accent-50 to-accent-100',
-      description: 'Materials in inventory',
+      bg: 'bg-cyan-50 text-cyan-700',
+      description: 'Sourced ingredients in catalog',
     },
     {
-      name: 'System Alerts',
-      value: '0',
-      icon: AlertTriangle,
-      gradient: 'from-premium-gold-500 to-premium-gold-600',
-      bgGradient: 'from-premium-gold-50 to-premium-gold-100',
-      description: 'Active system alerts',
+      name: 'Cold-Chain QA Status',
+      value: 'All Passed (100%)',
+      icon: Snowflake,
+      bg: 'bg-amber-50 text-amber-800',
+      description: 'Zero temperature threshold breaches',
     },
   ];
 
-  const recentActivity = [
-    { id: 1, action: 'New BOM created', user: 'Admin User', time: '2 hours ago' },
-    { id: 2, action: 'Material updated', user: 'Regular User', time: '5 hours ago' },
-    { id: 3, action: 'User registered', user: 'New User', time: '1 day ago' },
-    { id: 4, action: 'BOM exported', user: 'Admin User', time: '2 days ago' },
+  const teamMembers = [
+    { name: 'Ashutosh Kumar', email: 'ashukumarfbg8271@gmail.com', role: 'Super Admin', status: 'Active' },
+    { name: 'Akira Quality Lead', email: 'qa@akirafresh.in', role: 'QA Inspector', status: 'Active' },
+    { name: 'Cold-Chain Logistics Operator', email: 'coldchain@akirafresh.in', role: 'Operator', status: 'Active' },
   ];
 
   return (
-    <div className="space-y-8 animate-slide-up">
+    <div className="space-y-6 pb-12 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="bg-gradient-to-br from-premium-gold-500 to-premium-gold-600 p-2 rounded-xl shadow-lg">
-            <Shield className="h-6 w-6 text-white" />
+          <div className="p-2 rounded-xl bg-slate-900 text-white shadow-xs">
+            <Shield className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-              Admin Dashboard
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight font-display">
+              Enterprise Admin Control
             </h1>
-            <p className="mt-1 text-slate-500">System administration and management</p>
+            <p className="text-xs text-slate-500">Audit logs, user access roles, and facility production authorizations.</p>
           </div>
-        </div>
-        <div className="flex items-center space-x-3 bg-gradient-to-r from-premium-gold-50 to-premium-gold-100 px-4 py-2 rounded-xl border border-premium-gold-200">
-          <Shield className="h-5 w-5 text-premium-gold-600" />
-          <span className="text-sm font-medium text-premium-gold-700">Admin Access</span>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {adminStats.map((stat) => (
-          <div key={stat.name} className="bg-white rounded-2xl shadow-premium border border-slate-100 p-6 hover:shadow-premium-lg transition-all duration-300 card-hover">
-            <div className="flex items-center justify-between">
+          <div key={stat.name} className="fresh-card p-4 flex flex-col justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-500 mb-1">{stat.name}</p>
-                <p className="mt-2 text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">{stat.value}</p>
-                <p className="text-xs text-slate-500 mt-1">{stat.description}</p>
+                <p className="text-[11px] uppercase font-bold text-slate-400">{stat.name}</p>
+                <p className="text-xl font-extrabold text-slate-900 mt-0.5 font-display">{stat.value}</p>
               </div>
-              <div className={`bg-gradient-to-br ${stat.gradient} p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform`}>
-                <stat.icon className="h-6 w-6 text-white" />
+              <div className={`p-2.5 rounded-xl ${stat.bg}`}>
+                <stat.icon className="h-5 w-5" />
               </div>
             </div>
+            <p className="text-xs text-slate-500 mt-3 pt-2 border-t border-slate-100">{stat.description}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Activity */}
-        <div className="bg-white rounded-2xl shadow-premium border border-slate-100">
-          <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
-            <h2 className="text-lg font-semibold text-slate-900">Recent Activity</h2>
-          </div>
-          <div className="divide-y divide-slate-100">
-            {recentActivity.map((activity) => (
-              <div key={activity.id} className="px-6 py-4 flex items-center justify-between hover:bg-gradient-to-r hover:from-slate-50 hover:to-white transition-colors">
-                <div>
-                  <p className="font-medium text-slate-900">{activity.action}</p>
-                  <p className="text-sm text-slate-500">by {activity.user}</p>
-                </div>
-                <span className="text-sm text-slate-500">{activity.time}</span>
-              </div>
-            ))}
+      {/* Team Access Table */}
+      <div className="fresh-card overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">Authorized Team Members</h3>
+            <p className="text-xs text-slate-500">Staff with permissions to calculate and modify Akira recipe costings.</p>
           </div>
         </div>
 
-        {/* System Overview */}
-        <div className="bg-white rounded-2xl shadow-premium border border-slate-100">
-          <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
-            <h2 className="text-lg font-semibold text-slate-900">System Overview</h2>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl hover:shadow-md transition-shadow">
-              <div>
-                <p className="font-medium text-slate-900">Database Status</p>
-                <p className="text-sm text-slate-500">Local storage active</p>
-              </div>
-              <div className="w-3 h-3 bg-gradient-to-r from-secondary-500 to-secondary-600 rounded-full"></div>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl hover:shadow-md transition-shadow">
-              <div>
-                <p className="font-medium text-slate-900">Export Functionality</p>
-                <p className="text-sm text-slate-500">PDF and Excel generation</p>
-              </div>
-              <div className="w-3 h-3 bg-gradient-to-r from-secondary-500 to-secondary-600 rounded-full"></div>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl hover:shadow-md transition-shadow">
-              <div>
-                <p className="font-medium text-slate-900">Authentication</p>
-                <p className="text-sm text-slate-500">Mock authentication system</p>
-              </div>
-              <div className="w-3 h-3 bg-gradient-to-r from-premium-gold-500 to-premium-gold-600 rounded-full"></div>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl hover:shadow-md transition-shadow">
-              <div>
-                <p className="font-medium text-slate-900">Total System Value</p>
-                <p className="text-sm text-slate-500">Combined BOM value</p>
-              </div>
-              <p className="font-bold bg-gradient-to-r from-premium-gold-500 to-premium-gold-600 bg-clip-text text-transparent">
-                {formatCurrency(boms.reduce((sum, bom) => sum + bom.grandTotal, 0))}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-2xl shadow-premium border border-slate-100 p-8">
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="bg-gradient-to-br from-accent-50 to-accent-100 p-2 rounded-lg">
-            <Sparkles className="h-5 w-5 text-accent-600" />
-          </div>
-          <h2 className="text-xl font-semibold text-slate-900">Quick Actions</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center p-6 border border-slate-200 rounded-xl hover:shadow-md transition-all hover:-translate-y-0.5 bg-gradient-to-r from-slate-50 to-white hover:from-slate-100 hover:to-white group">
-            <Users className="h-5 w-5 text-primary-600 mr-4 group-hover:scale-110 transition-transform" />
-            <div className="text-left">
-              <p className="font-medium text-slate-900">Manage Users</p>
-              <p className="text-sm text-slate-500">Add or remove users</p>
-            </div>
-            <ArrowUpRight className="h-5 w-5 text-slate-400 ml-auto opacity-0 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
-          </button>
-          
-          <button className="flex items-center p-6 border border-slate-200 rounded-xl hover:shadow-md transition-all hover:-translate-y-0.5 bg-gradient-to-r from-slate-50 to-white hover:from-slate-100 hover:to-white group">
-            <Settings className="h-5 w-5 text-secondary-600 mr-4 group-hover:scale-110 transition-transform" />
-            <div className="text-left">
-              <p className="font-medium text-slate-900">System Settings</p>
-              <p className="text-sm text-slate-500">Configure system</p>
-            </div>
-            <ArrowUpRight className="h-5 w-5 text-slate-400 ml-auto opacity-0 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
-          </button>
-          
-          <button className="flex items-center p-6 border border-slate-200 rounded-xl hover:shadow-md transition-all hover:-translate-y-0.5 bg-gradient-to-r from-slate-50 to-white hover:from-slate-100 hover:to-white group">
-            <Activity className="h-5 w-5 text-accent-600 mr-4 group-hover:scale-110 transition-transform" />
-            <div className="text-left">
-              <p className="font-medium text-slate-900">View Logs</p>
-              <p className="text-sm text-slate-500">System activity logs</p>
-            </div>
-            <ArrowUpRight className="h-5 w-5 text-slate-400 ml-auto opacity-0 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
-          </button>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-500 font-bold uppercase tracking-wider">
+              <tr>
+                <th className="py-3 px-4">User</th>
+                <th className="py-3 px-4">Role</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-right">Access Level</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {teamMembers.map((member) => (
+                <tr key={member.email} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3 px-4">
+                    <p className="font-bold text-slate-900">{member.name}</p>
+                    <p className="text-[11px] text-slate-500">{member.email}</p>
+                  </td>
+                  <td className="py-3 px-4 font-semibold text-slate-700">{member.role}</td>
+                  <td className="py-3 px-4">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      {member.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-right text-slate-500 font-medium">Full Access</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

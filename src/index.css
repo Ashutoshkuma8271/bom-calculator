@@ -1,9 +1,8 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
 
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.6;
+  font-family: 'Plus Jakarta Sans', Inter, system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -13,7 +12,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background-color: #f8fafc;
+  color: #0f172a;
 }
 
 #root {
@@ -25,81 +25,82 @@ body {
   box-sizing: border-box;
 }
 
-/* Premium text selection */
+/* Fresh text selection */
 ::selection {
-  background-color: #fecdd3;
-  color: #7f1d1d;
+  background-color: #d1fae5;
+  color: #064e3b;
 }
 
-/* Custom scrollbar */
+/* Clean scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
   background: #f1f5f9;
-  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #fecdd3 0%, #fda4af 100%);
-  border-radius: 10px;
-  border: 2px solid #f1f5f9;
+  background: #cbd5e1;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #fda4af 0%, #fb7185 100%);
+  background: #94a3b8;
 }
 
-/* Premium focus styles */
+/* Focus styles */
 *:focus-visible {
-  outline: 2px solid #fb7185;
+  outline: 2px solid #10b981;
   outline-offset: 2px;
 }
 
-/* Smooth transitions */
-* {
-  transition: all 0.2s ease-in-out;
-}
-
-/* Disable transitions for certain elements */
+/* Transitions */
 button, a, input, select, textarea {
-  transition: all 0.15s ease-in-out;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Premium button hover effects */
-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+/* Akira Fresh Card effects */
+.fresh-card {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Premium card hover effects */
-.card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.fresh-card:hover {
+  border-color: rgba(16, 185, 129, 0.25);
+  box-shadow: 0 10px 25px -5px rgba(6, 78, 59, 0.06), 0 8px 10px -6px rgba(6, 78, 59, 0.02);
+  transform: translateY(-2px);
 }
 
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+/* Gradient accents */
+.gradient-fresh {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
 }
 
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%);
+.gradient-dark {
+  background: linear-gradient(135deg, #064e3b 0%, #022c22 100%);
+}
+
+.gradient-text-fresh {
+  background: linear-gradient(135deg, #064e3b 0%, #059669 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Premium input styles */
+/* Modern inputs */
 input, select, textarea {
-  background: white;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
+  border-radius: 10px;
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: #fb7185;
-  box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.1);
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  outline: none;
 }

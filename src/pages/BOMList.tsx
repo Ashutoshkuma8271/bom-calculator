@@ -1,274 +1,357 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
+  Plus, 
   Search, 
   Filter, 
-  MoreVertical, 
-  Edit, 
+  Download, 
+  FileSpreadsheet, 
   Copy, 
-  Trash2,
-  Eye,
-  Download,
+  Trash2, 
+  Edit, 
+  Eye, 
+  FileText, 
+  MoreVertical,
+  Layers,
   Sparkles,
-  ArrowUpRight,
-  FileText
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Snowflake,
+  ExternalLink,
+  Flame,
+  ArrowUpDown
 } from 'lucide-react';
+import { toast } from 'sonner';
 import useBOMStore from '../stores/bomStore';
 import { formatCurrency } from '../lib/utils';
-import { exportToExcel, exportToPDF, exportAllBOMsToExcel } from '../lib/export';
-import { BOM, ExportOptions } from '../types';
+import { exportToExcel, exportToPDF } from '../lib/export';
+import { BOM } from '../types';
 
 const BOMList: React.FC = () => {
-  const { boms, deleteBOM, duplicateBOM, setCurrentBOM } = useBOMStore();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'active' | 'archived'>('all');
-  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const { boms, deleteBOM, duplicateBOM, setCurrentBOM, currency } = useBOMStore();
+  const navigate = useNavigate();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [selectedBOM, setSelectedBOM] = useState<BOM | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+
+  const categories = Array.from(new Set(boms.map((b) => b.category).filter(Boolean)));
 
   const filteredBOMs = boms.filter((bom) => {
-    const matchesSearch = bom.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (bom.projectCode && bom.projectCode.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSearch =
+      bom.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bom.projectCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bom.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || bom.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesCategory = categoryFilter === 'all' || bom.category === categoryFilter;
+    return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this BOM?')) {
+  const handleDelete = (id: string, name: string) => {
+    if (confirm(`Are you sure you want to delete "${name}"?`)) {
       deleteBOM(id);
-      setMenuOpen(null);
+      toast.success('BOM deleted successfully');
     }
   };
 
   const handleDuplicate = (id: string) => {
     duplicateBOM(id);
-    setMenuOpen(null);
-  };
-
-  const handleEdit = (bom: BOM) => {
-    setCurrentBOM(bom);
-    setMenuOpen(null);
-  };
-
-  const handleExportExcel = (bom: BOM) => {
-    const options: ExportOptions = {
-      format: 'excel',
-      includeCosts: true,
-      includeLabor: true,
-      includeSummary: true,
-    };
-    exportToExcel(bom, options);
-    setMenuOpen(null);
-  };
-
-  const handleExportPDF = (bom: BOM) => {
-    const options: ExportOptions = {
-      format: 'pdf',
-      includeCosts: true,
-      includeLabor: true,
-      includeSummary: true,
-    };
-    exportToPDF(bom, options);
-    setMenuOpen(null);
-  };
-
-  const handleExportAll = () => {
-    exportAllBOMsToExcel(filteredBOMs);
+    toast.success('BOM duplicated as copy');
   };
 
   return (
-    <div className="space-y-8 animate-slide-up">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="bg-gradient-to-br from-primary-500 to-primary-600 p-2 rounded-xl shadow-lg">
-            <FileText className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-              BOM List
-            </h1>
-            <p className="mt-1 text-slate-500">Manage your premium Bill of Materials</p>
+    <div className="space-y-6 pb-12 animate-fade-in">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
+              <FileText className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight font-display">
+                Bill of Materials Registry
+              </h1>
+              <p className="text-xs text-slate-500">Manage all ready-to-cook recipes, packaging BOMs, and batch cost structures.</p>
+            </div>
           </div>
         </div>
-        <div className="flex space-x-3">
-          <button
-            onClick={handleExportAll}
-            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-secondary-500 to-secondary-600 text-white rounded-xl hover:from-secondary-600 hover:to-secondary-700 transition-all duration-200 shadow-md shadow-secondary-500/25 hover:shadow-lg hover:shadow-secondary-500/30 hover:-translate-y-0.5"
-          >
-            <Download className="h-5 w-5 mr-2" />
-            Export All
-          </button>
+
+        <div className="flex items-center space-x-3">
           <Link
             to="/calculator"
-            className="inline-flex items-center px-6 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-200 shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5"
+            onClick={() => setCurrentBOM(null)}
+            className="inline-flex items-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-extrabold shadow-sm transition-colors"
           >
-            Create New BOM
+            <Plus className="h-4 w-4 mr-1.5" />
+            <span>Create New BOM</span>
           </Link>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-premium border border-slate-100 p-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search BOMs..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all duration-200"
-            />
-          </div>
-          
-          <div className="flex items-center space-x-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200">
-            <Filter className="h-5 w-5 text-slate-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="bg-transparent border-none focus:ring-0 text-slate-700 font-medium cursor-pointer"
+      {/* Filter and Search Bar */}
+      <div className="fresh-card p-4 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between gap-4">
+        <div className="relative flex-1">
+          <Search className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by recipe title, project code (AF-MOM-001), ingredients..."
+            className="w-full pl-10 pr-4 py-2 text-xs text-slate-900 font-medium placeholder-slate-400"
+          />
+        </div>
+
+        <div className="flex items-center flex-wrap gap-2">
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-3 py-2 text-xs font-semibold text-slate-700 cursor-pointer"
+          >
+            <option value="all">All Categories</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 text-xs font-semibold text-slate-700 cursor-pointer"
+          >
+            <option value="all">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="draft">Draft</option>
+            <option value="archived">Archived</option>
+          </select>
+
+          <div className="flex rounded-xl bg-slate-100 p-0.5 border border-slate-200/80">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              }`}
             >
-              <option value="all">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="active">Active</option>
-              <option value="archived">Archived</option>
-            </select>
+              Grid
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                viewMode === 'table' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Table
+            </button>
           </div>
         </div>
       </div>
 
-      {/* BOM Table */}
-      <div className="bg-white rounded-2xl shadow-premium border border-slate-100 overflow-hidden">
-        {filteredBOMs.length === 0 ? (
-          <div className="p-16 text-center">
-            <div className="bg-gradient-to-br from-slate-100 to-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileText className="h-10 w-10 text-slate-300" />
-            </div>
-            <p className="text-slate-500 mb-4">No BOMs found</p>
-            <Link
-              to="/calculator"
-              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:from-primary-600 hover:to-primary-700 transition-all duration-200 shadow-md"
+      {/* BOM Count & Quick Stats Bar */}
+      <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+        <span>Showing <strong className="text-slate-900">{filteredBOMs.length}</strong> of {boms.length} registered BOMs</span>
+        <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+          <Snowflake className="h-3.5 w-3.5" />
+          Cold Chain Verified
+        </span>
+      </div>
+
+      {/* Grid View */}
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredBOMs.map((bom) => (
+            <div
+              key={bom.id}
+              className="fresh-card p-5 flex flex-col justify-between hover:border-emerald-400 group"
             >
-              Create your first BOM
-              <ArrowUpRight className="h-4 w-4 ml-2" />
-            </Link>
-          </div>
-        ) : (
+              <div>
+                {/* Header tags */}
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                      {bom.projectCode || 'AF-BOM'}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-100">
+                      v{bom.version}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                      bom.status === 'active' 
+                        ? 'bg-emerald-100 text-emerald-800' 
+                        : bom.status === 'draft'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {bom.status}
+                    </span>
+                  </div>
+
+                  <span className="text-xs text-slate-400 font-medium">
+                    {new Date(bom.updatedAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+
+                {/* Title and description */}
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-800 transition-colors leading-snug">
+                  {bom.name}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                  {bom.description || 'Ready-to-cook recipe and cost specification.'}
+                </p>
+
+                {/* Batch and Storage Details */}
+                <div className="mt-3 py-2 px-3 rounded-xl bg-slate-50 border border-slate-100 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Batch Output</span>
+                    <span className="font-bold text-slate-800">{bom.batchQuantity || 1} {bom.batchUnit || 'units'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Storage Temp</span>
+                    <span className="font-bold text-cyan-700">{bom.storageCondition || 'Frozen (-18°C)'}</span>
+                  </div>
+                </div>
+
+                {/* Items & labor pill */}
+                <div className="mt-3 flex items-center gap-3 text-xs text-slate-500">
+                  <span>{bom.items.length} Ingredients</span>
+                  <span>•</span>
+                  <span>{bom.laborItems.length} Operations</span>
+                  <span>•</span>
+                  <span className="text-emerald-700 font-semibold">+{bom.profitMargin}% Margin</span>
+                </div>
+              </div>
+
+              {/* Price & Action Footer */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Grand Batch Total</span>
+                  <span className="text-lg font-extrabold text-slate-900 font-display">
+                    {formatCurrency(bom.grandTotal, currency)}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      setCurrentBOM(bom);
+                      navigate('/calculator');
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors shadow-xs"
+                    title="Edit BOM"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setSelectedBOM(bom)}
+                    className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                    title="Quick View"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDuplicate(bom.id)}
+                    className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                    title="Duplicate"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(bom.id, bom.name)}
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* Table View */
+        <div className="fresh-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-slate-50 to-white">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-500 font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    BOM Name
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    Project Code
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    Version
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    Total Cost
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="py-3 px-4">Code / Recipe Name</th>
+                  <th className="py-3 px-4">Category</th>
+                  <th className="py-3 px-4">Batch Yield</th>
+                  <th className="py-3 px-4">Ingredients Cost</th>
+                  <th className="py-3 px-4">Labor Cost</th>
+                  <th className="py-3 px-4">Grand Total</th>
+                  <th className="py-3 px-4">Unit Cost</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredBOMs.map((bom) => (
-                  <tr key={bom.id} className="hover:bg-gradient-to-r hover:from-slate-50 hover:to-white transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-3">
-                        <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-2 rounded-lg">
-                          <Sparkles className="h-4 w-4 text-primary-600" />
+                  <tr key={bom.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3.5 px-4">
+                      <div>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="font-mono font-bold text-slate-400">{bom.projectCode || 'AF-BOM'}</span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800">
+                            v{bom.version}
+                          </span>
                         </div>
-                        <div>
-                          <div className="font-medium text-slate-900">{bom.name}</div>
-                          {bom.description && (
-                            <div className="text-sm text-slate-500">{bom.description}</div>
-                          )}
-                        </div>
+                        <p className="font-bold text-slate-900 mt-0.5 text-sm">{bom.name}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {bom.projectCode || '-'}
+                    <td className="py-3.5 px-4 text-slate-600 font-medium">
+                      {bom.category || 'Food & Ready-to-Cook'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {bom.version}
+                    <td className="py-3.5 px-4 text-slate-800 font-semibold">
+                      {bom.batchQuantity || 1} {bom.batchUnit || 'units'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                        bom.status === 'active' ? 'bg-gradient-to-r from-secondary-100 to-secondary-50 text-secondary-700' :
-                        bom.status === 'draft' ? 'bg-gradient-to-r from-premium-gold-100 to-premium-gold-50 text-premium-gold-700' :
-                        'bg-gradient-to-r from-slate-100 to-slate-50 text-slate-700'
-                      }`}>
-                        {bom.status}
-                      </span>
+                    <td className="py-3.5 px-4 text-slate-800 font-medium">
+                      {formatCurrency(bom.totalMaterialCost, currency)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">
-                      {formatCurrency(bom.grandTotal)}
+                    <td className="py-3.5 px-4 text-slate-800 font-medium">
+                      {formatCurrency(bom.totalLaborCost, currency)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {new Date(bom.createdAt).toLocaleDateString()}
+                    <td className="py-3.5 px-4 font-extrabold text-slate-900 font-mono">
+                      {formatCurrency(bom.grandTotal, currency)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="relative">
+                    <td className="py-3.5 px-4 font-bold text-emerald-700 font-mono">
+                      {formatCurrency(bom.costPerUnit || bom.grandTotal / (bom.batchQuantity || 1), currency)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="flex items-center justify-end space-x-1">
                         <button
-                          onClick={() => setMenuOpen(menuOpen === bom.id ? null : bom.id)}
-                          className="text-slate-400 hover:text-slate-600 transition-colors p-2 rounded-lg hover:bg-slate-100"
+                          onClick={() => {
+                            setCurrentBOM(bom);
+                            navigate('/calculator');
+                          }}
+                          className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
+                          title="Edit"
                         >
-                          <MoreVertical className="h-5 w-5" />
+                          <Edit className="h-4 w-4" />
                         </button>
-                        
-                        {menuOpen === bom.id && (
-                          <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-premium-lg border border-slate-100 z-10 overflow-hidden">
-                            <div className="py-2">
-                              <Link
-                                to="/calculator"
-                                onClick={() => handleEdit(bom)}
-                                className="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-gradient-to-r hover:from-slate-50 hover:to-white transition-colors"
-                              >
-                                <Edit className="h-4 w-4 mr-3 text-slate-400" />
-                                Edit
-                              </Link>
-                              <button
-                                onClick={() => handleDuplicate(bom.id)}
-                                className="flex items-center w-full px-4 py-3 text-sm text-slate-700 hover:bg-gradient-to-r hover:from-slate-50 hover:to-white transition-colors"
-                              >
-                                <Copy className="h-4 w-4 mr-3 text-slate-400" />
-                                Duplicate
-                              </button>
-                              <button
-                                onClick={() => handleExportExcel(bom)}
-                                className="flex items-center w-full px-4 py-3 text-sm text-slate-700 hover:bg-gradient-to-r hover:from-slate-50 hover:to-white transition-colors"
-                              >
-                                <Download className="h-4 w-4 mr-3 text-slate-400" />
-                                Export Excel
-                              </button>
-                              <button
-                                onClick={() => handleExportPDF(bom)}
-                                className="flex items-center w-full px-4 py-3 text-sm text-slate-700 hover:bg-gradient-to-r hover:from-slate-50 hover:to-white transition-colors"
-                              >
-                                <Download className="h-4 w-4 mr-3 text-slate-400" />
-                                Export PDF
-                              </button>
-                              <div className="border-t border-slate-100 my-1" />
-                              <button
-                                onClick={() => handleDelete(bom.id)}
-                                className="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                              >
-                                <Trash2 className="h-4 w-4 mr-3" />
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        )}
+                        <button
+                          onClick={() => exportToPDF(bom, { format: 'pdf', includeCosts: true, includeLabor: true, includeSummary: true })}
+                          className="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg"
+                          title="Export PDF"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDuplicate(bom.id)}
+                          className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
+                          title="Duplicate"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(bom.id, bom.name)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -276,8 +359,104 @@ const BOMList: React.FC = () => {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* BOM Detail Modal */}
+      {selectedBOM && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedBOM(null)} />
+          <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 z-10 animate-slide-up space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-mono font-bold text-slate-400">{selectedBOM.projectCode || 'AF-BOM'}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">
+                    v{selectedBOM.version}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mt-1">{selectedBOM.name}</h3>
+                <p className="text-xs text-slate-500">{selectedBOM.description}</p>
+              </div>
+              <button
+                onClick={() => setSelectedBOM(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Summary Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Ingredients</span>
+                <span className="text-base font-extrabold text-slate-900">{formatCurrency(selectedBOM.totalMaterialCost, currency)}</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Labor & QA</span>
+                <span className="text-base font-extrabold text-slate-900">{formatCurrency(selectedBOM.totalLaborCost, currency)}</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Overhead + Margin</span>
+                <span className="text-base font-extrabold text-emerald-700">{formatCurrency(selectedBOM.totalOverhead + selectedBOM.totalProfit, currency)}</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-emerald-600 text-white shadow-xs">
+                <span className="text-[10px] uppercase font-bold text-emerald-200 block">Grand Total</span>
+                <span className="text-base font-extrabold">{formatCurrency(selectedBOM.grandTotal, currency)}</span>
+              </div>
+            </div>
+
+            {/* Ingredients Table */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Recipe Composition & Yield</h4>
+              <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
+                    <tr>
+                      <th className="p-2.5">Item Name</th>
+                      <th className="p-2.5">Quantity</th>
+                      <th className="p-2.5">Unit Rate</th>
+                      <th className="p-2.5">Waste %</th>
+                      <th className="p-2.5 text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {selectedBOM.items.map((item) => (
+                      <tr key={item.id}>
+                        <td className="p-2.5 font-semibold text-slate-800">{item.materialName}</td>
+                        <td className="p-2.5 text-slate-600">{item.quantity} {item.unit}</td>
+                        <td className="p-2.5 text-slate-600">{formatCurrency(item.costPerUnit, currency)}</td>
+                        <td className="p-2.5 text-slate-500">{item.wastePercentage || 0}%</td>
+                        <td className="p-2.5 font-bold text-slate-900 text-right">{formatCurrency(item.totalCost, currency)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+              <button
+                onClick={() => exportToPDF(selectedBOM, { format: 'pdf', includeCosts: true, includeLabor: true, includeSummary: true })}
+                className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors flex items-center space-x-1.5"
+              >
+                <Download className="h-4 w-4" />
+                <span>Export PDF</span>
+              </button>
+              <button
+                onClick={() => {
+                  setCurrentBOM(selectedBOM);
+                  navigate('/calculator');
+                }}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors"
+              >
+                Open in Calculator
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

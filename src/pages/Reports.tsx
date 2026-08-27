@@ -1,166 +1,220 @@
-import React from 'react';
-import { BarChart3, Download, FileText, Sparkles, TrendingUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  BarChart3, 
+  PieChart as PieIcon, 
+  TrendingUp, 
+  DollarSign, 
+  Download, 
+  FileSpreadsheet, 
+  Layers, 
+  Calendar,
+  Filter,
+  CheckCircle2,
+  Snowflake,
+  Flame,
+  ArrowUpRight
+} from 'lucide-react';
+import { 
+  ResponsiveContainer, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  Legend, 
+  PieChart, 
+  Pie, 
+  Cell 
+} from 'recharts';
 import useBOMStore from '../stores/bomStore';
 import { formatCurrency } from '../lib/utils';
-import { exportAllBOMsToExcel } from '../lib/export';
+import { exportToExcel, exportToPDF } from '../lib/export';
 
 const Reports: React.FC = () => {
-  const { boms } = useBOMStore();
+  const { boms, materials, laborCosts, currency } = useBOMStore();
+  const [selectedBOMId, setSelectedBOMId] = useState<string>('all');
 
   const totalValue = boms.reduce((sum, bom) => sum + bom.grandTotal, 0);
   const totalMaterialCost = boms.reduce((sum, bom) => sum + bom.totalMaterialCost, 0);
   const totalLaborCost = boms.reduce((sum, bom) => sum + bom.totalLaborCost, 0);
+  const totalOverhead = boms.reduce((sum, bom) => sum + bom.totalOverhead, 0);
+  const totalProfit = boms.reduce((sum, bom) => sum + bom.totalProfit, 0);
 
-  const costBreakdown = [
-    { name: 'Materials', value: totalMaterialCost, gradient: 'from-primary-500 to-primary-600', bgGradient: 'from-primary-50 to-primary-100' },
-    { name: 'Labor', value: totalLaborCost, gradient: 'from-secondary-500 to-secondary-600', bgGradient: 'from-secondary-50 to-secondary-100' },
-    { name: 'Overhead', value: boms.reduce((sum, bom) => sum + bom.totalOverhead, 0), gradient: 'from-premium-gold-500 to-premium-gold-600', bgGradient: 'from-premium-gold-50 to-premium-gold-100' },
-    { name: 'Profit', value: boms.reduce((sum, bom) => sum + bom.totalProfit, 0), gradient: 'from-accent-500 to-accent-600', bgGradient: 'from-accent-50 to-accent-100' },
-  ];
+  // Category spend
+  const categorySpendMap: Record<string, number> = {};
+  boms.forEach((b) => {
+    b.items.forEach((item) => {
+      const cat = item.category || 'Proteins & Meats';
+      categorySpendMap[cat] = (categorySpendMap[cat] || 0) + item.totalCost;
+    });
+  });
+
+  const categoryChartData = Object.entries(categorySpendMap).map(([name, value], i) => {
+    const colors = ['#059669', '#0284c7', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899'];
+    return { name, value, color: colors[i % colors.length] };
+  });
+
+  // Profitability per BOM
+  const profitabilityData = boms.map((b) => ({
+    name: b.name.length > 22 ? b.name.substring(0, 20) + '...' : b.name,
+    ProductionCost: b.totalMaterialCost + b.totalLaborCost + b.totalOverhead,
+    ProfitMargin: b.totalProfit,
+    GrandTotal: b.grandTotal,
+  }));
+
+  const handleExportAllPDF = () => {
+    if (boms.length === 0) return;
+    exportToPDF(boms[0], {
+      format: 'pdf',
+      includeCosts: true,
+      includeLabor: true,
+      includeSummary: true,
+    });
+  };
 
   return (
-    <div className="space-y-8 animate-slide-up">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="bg-gradient-to-br from-accent-500 to-accent-600 p-2 rounded-xl shadow-lg">
-            <BarChart3 className="h-6 w-6 text-white" />
+    <div className="space-y-6 pb-12 animate-fade-in">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
+              <BarChart3 className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight font-display">
+                Cost Analytics & Margin Intelligence
+              </h1>
+              <p className="text-xs text-slate-500">Comprehensive yield ratios, category spend distribution, and margin metrics.</p>
+            </div>
           </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleExportAllPDF}
+            className="inline-flex items-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-xs"
+          >
+            <Download className="h-4 w-4 mr-1.5" />
+            <span>Export Financial Report</span>
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="fresh-card p-4">
+          <span className="text-[11px] uppercase font-bold text-slate-400 block">Total Pipeline Value</span>
+          <span className="text-2xl font-extrabold text-slate-900 font-display mt-0.5 block">
+            {formatCurrency(totalValue, currency)}
+          </span>
+          <span className="text-xs text-slate-500 mt-1 block">Across {boms.length} Active BOMs</span>
+        </div>
+
+        <div className="fresh-card p-4">
+          <span className="text-[11px] uppercase font-bold text-slate-400 block">Raw Ingredients Spend</span>
+          <span className="text-2xl font-extrabold text-emerald-700 font-display mt-0.5 block">
+            {formatCurrency(totalMaterialCost, currency)}
+          </span>
+          <span className="text-xs text-slate-500 mt-1 block">
+            {((totalMaterialCost / (totalValue || 1)) * 100).toFixed(1)}% of total cost
+          </span>
+        </div>
+
+        <div className="fresh-card p-4">
+          <span className="text-[11px] uppercase font-bold text-slate-400 block">Total Labor & Processing</span>
+          <span className="text-2xl font-extrabold text-sky-700 font-display mt-0.5 block">
+            {formatCurrency(totalLaborCost, currency)}
+          </span>
+          <span className="text-xs text-slate-500 mt-1 block">
+            {((totalLaborCost / (totalValue || 1)) * 100).toFixed(1)}% of total cost
+          </span>
+        </div>
+
+        <div className="fresh-card p-4">
+          <span className="text-[11px] uppercase font-bold text-slate-400 block">Total Realized Profit Margin</span>
+          <span className="text-2xl font-extrabold text-amber-700 font-display mt-0.5 block">
+            {formatCurrency(totalProfit, currency)}
+          </span>
+          <span className="text-xs text-slate-500 mt-1 block">Target margin buffer</span>
+        </div>
+      </div>
+
+      {/* Chart Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Ingredient Category Spend Breakdown */}
+        <div className="fresh-card p-5 space-y-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-              Reports
-            </h1>
-            <p className="mt-1 text-slate-500">Analyze your premium BOM costs and generate reports</p>
+            <h3 className="text-sm font-bold text-slate-900">Material Cost by Ingredient Category</h3>
+            <p className="text-xs text-slate-500">Distribution across Meats, Spices, Dairy, Packaging, and Cold Chain.</p>
           </div>
-        </div>
-        <button 
-          onClick={() => exportAllBOMsToExcel(boms)}
-          className="inline-flex items-center px-6 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-200 shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5"
-        >
-          <Download className="h-5 w-5 mr-2" />
-          Export Report
-        </button>
-      </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-2xl shadow-premium border border-slate-100 p-6 hover:shadow-premium-lg transition-all duration-300 card-hover">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500 mb-1">Total BOMs</p>
-              <p className="mt-2 text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">{boms.length}</p>
-            </div>
-            <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-3 rounded-xl">
-              <FileText className="h-6 w-6 text-primary-600" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-2xl shadow-premium border border-slate-100 p-6 hover:shadow-premium-lg transition-all duration-300 card-hover">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500 mb-1">Total Value</p>
-              <p className="mt-2 text-2xl font-bold bg-gradient-to-r from-premium-gold-500 to-premium-gold-600 bg-clip-text text-transparent">{formatCurrency(totalValue)}</p>
-            </div>
-            <div className="bg-gradient-to-br from-premium-gold-50 to-premium-gold-100 p-3 rounded-xl">
-              <TrendingUp className="h-6 w-6 text-premium-gold-600" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-2xl shadow-premium border border-slate-100 p-6 hover:shadow-premium-lg transition-all duration-300 card-hover">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500 mb-1">Material Costs</p>
-              <p className="mt-2 text-2xl font-bold bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent">{formatCurrency(totalMaterialCost)}</p>
-            </div>
-            <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-3 rounded-xl">
-              <FileText className="h-6 w-6 text-primary-600" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-2xl shadow-premium border border-slate-100 p-6 hover:shadow-premium-lg transition-all duration-300 card-hover">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500 mb-1">Labor Costs</p>
-              <p className="mt-2 text-2xl font-bold bg-gradient-to-r from-secondary-500 to-secondary-600 bg-clip-text text-transparent">{formatCurrency(totalLaborCost)}</p>
-            </div>
-            <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 p-3 rounded-xl">
-              <FileText className="h-6 w-6 text-secondary-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Cost Breakdown */}
-      <div className="bg-white rounded-2xl shadow-premium border border-slate-100 p-8">
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="bg-gradient-to-br from-accent-50 to-accent-100 p-2 rounded-lg">
-            <Sparkles className="h-5 w-5 text-accent-600" />
-          </div>
-          <h2 className="text-xl font-semibold text-slate-900">Cost Breakdown</h2>
-        </div>
-        <div className="space-y-6">
-          {costBreakdown.map((item) => (
-            <div key={item.name}>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-slate-600 font-medium">{item.name}</span>
-                <span className="font-semibold text-slate-900">{formatCurrency(item.value)}</span>
-              </div>
-              <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                <div
-                  className={`h-full bg-gradient-to-r ${item.gradient} rounded-full transition-all duration-500`}
-                  style={{ width: `${totalValue > 0 ? (item.value / totalValue) * 100 : 0}%` }}
+          <div className="h-64 w-full flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={categoryChartData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={85}
+                  innerRadius={50}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  {categoryChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(val: any) => [formatCurrency(Number(val), currency), 'Spend']}
+                  contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '12px' }}
                 />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
 
-      {/* Recent BOMs Table */}
-      <div className="bg-white rounded-2xl shadow-premium border border-slate-100 overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
-          <h2 className="text-lg font-semibold text-slate-900">Recent BOMs</h2>
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+            {categoryChartData.map((c) => (
+              <div key={c.name} className="flex items-center justify-between text-xs p-1.5 rounded-lg bg-slate-50">
+                <div className="flex items-center space-x-1.5 truncate">
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
+                  <span className="text-slate-700 font-medium truncate">{c.name}</span>
+                </div>
+                <span className="font-bold text-slate-900 ml-1">{formatCurrency(c.value, currency)}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gradient-to-r from-slate-50 to-white">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Materials
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Labor
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Total
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {boms.slice(-5).reverse().map((bom) => (
-                <tr key={bom.id} className="hover:bg-gradient-to-r hover:from-slate-50 hover:to-white transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-900">
-                    {bom.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                    {formatCurrency(bom.totalMaterialCost)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                    {formatCurrency(bom.totalLaborCost)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent">
-                    {formatCurrency(bom.grandTotal)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+        {/* Batch Cost vs Profit Analysis */}
+        <div className="fresh-card p-5 space-y-4">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">Production Cost vs. Margin Markup</h3>
+            <p className="text-xs text-slate-500">Comparative view per manufactured batch run.</p>
+          </div>
+
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={profitabilityData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} tickFormatter={(val) => `₹${(val/1000).toFixed(0)}k`} />
+                <Tooltip 
+                  formatter={(val: any) => [formatCurrency(Number(val), currency), 'Value']}
+                  contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Bar dataKey="ProductionCost" name="Base Production Cost" fill="#059669" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="ProfitMargin" name="Profit Margin Markup" fill="#10b981" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs text-slate-600">
+            <span>Average Margin across portfolio:</span>
+            <span className="font-extrabold text-emerald-800">
+              {boms.length > 0 ? (boms.reduce((s, b) => s + b.profitMargin, 0) / boms.length).toFixed(1) : 0}%
+            </span>
+          </div>
         </div>
       </div>
     </div>

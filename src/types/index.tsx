@@ -6,6 +6,9 @@ export interface Material {
   costPerUnit: number;
   supplier?: string;
   description?: string;
+  inStock?: number;
+  reorderLevel?: number;
+  storageCondition?: 'Frozen (-18°C)' | 'Chilled (2-4°C)' | 'Ambient' | 'Special';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +30,7 @@ export interface BOMItem {
   costPerUnit: number;
   totalCost: number;
   wastePercentage?: number;
+  category?: string;
 }
 
 export interface BOMLaborItem {
@@ -36,6 +40,7 @@ export interface BOMLaborItem {
   hours: number;
   hourlyRate: number;
   totalCost: number;
+  operationType?: string;
 }
 
 export interface BOM {
@@ -43,6 +48,10 @@ export interface BOM {
   name: string;
   description?: string;
   projectCode?: string;
+  category?: string;
+  batchQuantity?: number;
+  batchUnit?: string;
+  storageCondition?: string;
   version: string;
   items: BOMItem[];
   laborItems: BOMLaborItem[];
@@ -53,6 +62,8 @@ export interface BOM {
   totalOverhead: number;
   totalProfit: number;
   grandTotal: number;
+  costPerUnit?: number;
+  suggestedSellingPrice?: number;
   createdAt: Date;
   updatedAt: Date;
   createdBy?: string;
@@ -63,6 +74,10 @@ export interface BOMFormData {
   name: string;
   description?: string;
   projectCode?: string;
+  category?: string;
+  batchQuantity?: number;
+  batchUnit?: string;
+  storageCondition?: string;
   overheadPercentage: number;
   profitMargin: number;
   items: Omit<BOMItem, 'id' | 'totalCost'>[];

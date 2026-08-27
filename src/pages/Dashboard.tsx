@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   FileText, 
@@ -10,191 +10,465 @@ import {
   Calculator,
   BarChart3,
   Sparkles,
-  ArrowUpRight
+  Flame,
+  Snowflake,
+  ShieldCheck,
+  Zap,
+  Layers,
+  ChevronRight,
+  Download,
+  Copy,
+  ExternalLink,
+  ArrowUpRight,
+  Box
 } from 'lucide-react';
+import { 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  PieChart, 
+  Pie, 
+  Cell 
+} from 'recharts';
 import useBOMStore from '../stores/bomStore';
 import { formatCurrency } from '../lib/utils';
+import { exportToPDF, exportToExcel } from '../lib/export';
+import { BOM } from '../types';
 
 const Dashboard: React.FC = () => {
-  const { boms, materials } = useBOMStore();
+  const { boms, materials, setCurrentBOM, duplicateBOM, currency } = useBOMStore();
+  const navigate = useNavigate();
+
+  const totalValue = boms.reduce((sum, bom) => sum + bom.grandTotal, 0);
+  const totalMaterialCost = boms.reduce((sum, bom) => sum + bom.totalMaterialCost, 0);
+  const totalLaborCost = boms.reduce((sum, bom) => sum + bom.totalLaborCost, 0);
+  const activeBOMsCount = boms.filter((b) => b.status === 'active').length;
+  const avgMargin = boms.length > 0
+    ? (boms.reduce((sum, b) => sum + (b.profitMargin || 0), 0) / boms.length).toFixed(1)
+    : '0';
 
   const stats = [
     {
-      name: 'Total BOMs',
-      value: boms.length,
-      icon: FileText,
-      gradient: 'from-primary-500 to-primary-600',
-      bgGradient: 'from-primary-50 to-primary-100',
+      name: 'Total Pipeline Value',
+      value: formatCurrency(totalValue, currency),
+      subtext: `${boms.length} Production Batches`,
+      icon: DollarSign,
+      color: 'emerald',
+      bg: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+      iconBg: 'bg-emerald-600 text-white',
+      link: '/reports',
+    },
+    {
+      name: 'Active Cold Chain BOMs',
+      value: activeBOMsCount.toString(),
+      subtext: 'In active manufacturing & packing',
+      icon: Snowflake,
+      color: 'cyan',
+      bg: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+      iconBg: 'bg-cyan-600 text-white',
       link: '/boms',
     },
     {
-      name: 'Materials',
-      value: materials.length,
+      name: 'Materials in Stock',
+      value: materials.length.toString(),
+      subtext: 'Meats, spices, packaging & dry ice',
       icon: Package,
-      gradient: 'from-secondary-500 to-secondary-600',
-      bgGradient: 'from-secondary-50 to-secondary-100',
+      color: 'blue',
+      bg: 'bg-blue-50 text-blue-700 border-blue-100',
+      iconBg: 'bg-blue-600 text-white',
       link: '/materials',
     },
     {
-      name: 'Active Projects',
-      value: boms.filter((b) => b.status === 'active').length,
+      name: 'Average Profit Margin',
+      value: `${avgMargin}%`,
+      subtext: 'Target markup maintained',
       icon: TrendingUp,
-      gradient: 'from-accent-500 to-accent-600',
-      bgGradient: 'from-accent-50 to-accent-100',
-      link: '/boms',
-    },
-    {
-      name: 'Total Value',
-      value: formatCurrency(
-        boms.reduce((sum, bom) => sum + bom.grandTotal, 0)
-      ),
-      icon: DollarSign,
-      gradient: 'from-premium-gold-500 to-premium-gold-600',
-      bgGradient: 'from-premium-gold-50 to-premium-gold-100',
+      color: 'amber',
+      bg: 'bg-amber-50 text-amber-800 border-amber-100',
+      iconBg: 'bg-amber-500 text-white',
       link: '/reports',
     },
   ];
 
-  const recentBOMs = boms.slice(-5).reverse();
+  // Chart data for cost comparison
+  const costDistributionData = [
+    { name: 'Raw Ingredients & Meats', value: totalMaterialCost, color: '#059669' },
+    { name: 'Labor & Processing', value: totalLaborCost, color: '#0ea5e9' },
+    { name: 'Overhead & Cold Chain', value: boms.reduce((sum, b) => sum + b.totalOverhead, 0), color: '#f59e0b' },
+    { name: 'Net Profit Margin', value: boms.reduce((sum, b) => sum + b.totalProfit, 0), color: '#10b981' },
+  ];
+
+  // Batch trends
+  const batchTrendData = boms.map((b, i) => ({
+    name: b.name.length > 20 ? b.name.substring(0, 18) + '...' : b.name,
+    total: b.grandTotal,
+    materials: b.totalMaterialCost,
+    labor: b.totalLaborCost,
+  }));
+
+  const quickTemplates = [
+    {
+      title: 'Akira Momos Batch',
+      category: 'Food & Ready-to-Cook',
+      yield: '5,000 Pcs (500 Boxes)',
+      code: 'AF-MOM-001',
+      icon: '🥟',
+      desc: 'Chicken breast, cheddar-mozzarella blend, delicate wrappers & blast freezing.',
+      action: () => {
+        const momoBOM = boms.find(b => b.projectCode === 'AF-MOM-001') || boms[0];
+        if (momoBOM) {
+          duplicateBOM(momoBOM.id);
+          navigate('/boms');
+        } else {
+          navigate('/calculator');
+        }
+      }
+    },
+    {
+      title: 'Royal Seekh Kebab Batch',
+      category: 'Food & Ready-to-Cook',
+      yield: '1,000 Packs (4k Skewers)',
+      code: 'AF-KEB-002',
+      icon: '🍢',
+      desc: 'Himalayan mutton mince, Kashmiri saffron spice blend & flash char grill.',
+      action: () => {
+        const kebabBOM = boms.find(b => b.projectCode === 'AF-KEB-002') || boms[0];
+        if (kebabBOM) {
+          duplicateBOM(kebabBOM.id);
+          navigate('/boms');
+        } else {
+          navigate('/calculator');
+        }
+      }
+    },
+    {
+      title: 'Cold-Chain Home Shipper',
+      category: 'Cold Chain & Logistics',
+      yield: '500 Delivery Boxes',
+      code: 'AF-LOG-003',
+      icon: '❄️',
+      desc: 'High-density EPS insulated thermal boxes with -15°C refrigerant gel sheets.',
+      action: () => {
+        const logBOM = boms.find(b => b.projectCode === 'AF-LOG-003') || boms[0];
+        if (logBOM) {
+          duplicateBOM(logBOM.id);
+          navigate('/boms');
+        } else {
+          navigate('/calculator');
+        }
+      }
+    },
+    {
+      title: 'Blank Custom BOM',
+      category: 'Custom Calculation',
+      yield: 'Custom Units',
+      code: 'NEW-BOM',
+      icon: '⚡',
+      desc: 'Build from scratch with raw materials, labor steps, packaging, and custom margin.',
+      action: () => {
+        setCurrentBOM(null);
+        navigate('/calculator');
+      }
+    },
+  ];
 
   return (
-    <div className="space-y-8 animate-slide-up">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center space-x-3">
-            <div className="bg-gradient-to-br from-primary-500 to-primary-600 p-2 rounded-xl shadow-lg">
-              <Sparkles className="h-6 w-6 text-white" />
+    <div className="space-y-6 pb-12 animate-fade-in">
+      {/* Welcome Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-slate-900 text-white p-6 sm:p-8 shadow-premium-lg">
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-700/60 border border-emerald-500/40 text-emerald-200 text-xs font-semibold">
+              <Flame className="h-3.5 w-3.5 text-emerald-300" />
+              <span>Akira Fresh Food Manufacturing & Cost Intelligence</span>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                Dashboard
-              </h1>
-              <p className="mt-1 text-slate-500">Welcome to your premium BOM Calculator</p>
-            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-display text-white">
+              BOM Costing & Yield Dashboard
+            </h1>
+            <p className="text-sm text-emerald-100/80 max-w-2xl leading-relaxed">
+              Calculate exact ingredient costs, labor, blast-freezing overheads, cold-chain packaging, and profit margins for ready-to-cook gourmet products.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              to="/boms"
+              className="inline-flex items-center px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors border border-white/20"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              <span>Browse All BOMs</span>
+            </Link>
+            <Link
+              to="/calculator"
+              onClick={() => setCurrentBOM(null)}
+              className="inline-flex items-center px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-lg shadow-emerald-500/30 transition-all hover:scale-[1.02]"
+            >
+              <Plus className="h-4 w-4 mr-1.5 stroke-[2.5]" />
+              <span>New Recipe BOM</span>
+            </Link>
           </div>
         </div>
-        <Link
-          to="/calculator"
-          className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-200 shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5"
-        >
-          <Plus className="h-5 w-5 mr-2" />
-          New BOM
-        </Link>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* KPI Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {stats.map((stat) => (
           <Link
             key={stat.name}
             to={stat.link}
-            className="group bg-white rounded-2xl shadow-premium p-6 hover:shadow-premium-lg transition-all duration-300 card-hover border border-slate-100"
+            className="fresh-card p-5 group flex flex-col justify-between"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-500 mb-1">{stat.name}</p>
-                <p className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{stat.name}</p>
+                <p className="text-2xl font-extrabold text-slate-900 mt-1 tracking-tight font-display">
                   {stat.value}
                 </p>
               </div>
-              <div className={`bg-gradient-to-br ${stat.gradient} p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                <stat.icon className="h-6 w-6 text-white" />
+              <div className={`p-2.5 rounded-xl shadow-xs ${stat.iconBg} group-hover:scale-110 transition-transform`}>
+                <stat.icon className="h-5 w-5" />
               </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+              <span className="text-slate-500">{stat.subtext}</span>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:translate-x-1 transition-transform" />
             </div>
           </Link>
         ))}
       </div>
 
-      {/* Recent BOMs */}
-      <div className="bg-white rounded-2xl shadow-premium border border-slate-100 overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Recent BOMs</h2>
-          <Link
-            to="/boms"
-            className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center group transition-colors"
-          >
-            View all
-            <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+      {/* Quick Launch Akira Fresh Recipe Presets */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-emerald-600" />
+              <span>Akira Fresh Recipe & Batch Presets</span>
+            </h2>
+            <p className="text-xs text-slate-500">1-Click clone recipes with pre-configured ingredient yields and blast-freezing operations.</p>
+          </div>
+          <Link to="/calculator" className="text-xs font-semibold text-emerald-700 hover:text-emerald-800">
+            Open Calculator →
           </Link>
         </div>
-        <div className="divide-y divide-slate-100">
-          {recentBOMs.length === 0 ? (
-            <div className="px-6 py-16 text-center">
-              <div className="bg-gradient-to-br from-slate-100 to-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="h-10 w-10 text-slate-300" />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {quickTemplates.map((template) => (
+            <div
+              key={template.code}
+              onClick={template.action}
+              className="fresh-card p-4 cursor-pointer hover:border-emerald-500/40 group flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-2xl">{template.icon}</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-100">
+                    {template.yield}
+                  </span>
+                </div>
+                <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
+                  {template.title}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed line-clamp-2">
+                  {template.desc}
+                </p>
               </div>
-              <p className="text-slate-500 mb-4">No BOMs created yet</p>
-              <Link
-                to="/calculator"
-                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:from-primary-600 hover:to-primary-700 transition-all duration-200 shadow-md"
-              >
-                Create your first BOM
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Link>
+
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-emerald-700 group-hover:text-emerald-800">
+                <span>Load & Calculate</span>
+                <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+              </div>
             </div>
-          ) : (
-            recentBOMs.map((bom) => (
-              <Link
-                key={bom.id}
-                to={`/calculator`}
-                className="px-6 py-4 hover:bg-gradient-to-r hover:from-slate-50 hover:to-white flex items-center justify-between transition-all duration-200 group"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                    <FileText className="h-5 w-5 text-primary-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900 group-hover:text-primary-600 transition-colors">{bom.name}</p>
-                    <p className="text-sm text-slate-500">{bom.projectCode || 'No project code'}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-slate-900">{formatCurrency(bom.grandTotal)}</p>
-                  <p className="text-xs text-slate-500">
-                    {new Date(bom.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </Link>
-            ))
-          )}
+          ))}
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link
-          to="/calculator"
-          className="group bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-8 text-white hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-1 card-hover relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
-          <Calculator className="h-10 w-10 mb-4 relative z-10" />
-          <h3 className="text-xl font-semibold mb-2 relative z-10">Create BOM</h3>
-          <p className="text-primary-100 text-sm relative z-10">Calculate material and labor costs for your projects</p>
-          <ArrowUpRight className="absolute bottom-4 right-4 h-5 w-5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all duration-300" />
-        </Link>
-        
-        <Link
-          to="/materials"
-          className="group bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-2xl p-8 text-white hover:from-secondary-600 hover:to-secondary-700 transition-all duration-300 shadow-lg shadow-secondary-500/25 hover:shadow-xl hover:shadow-secondary-500/30 hover:-translate-y-1 card-hover relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
-          <Package className="h-10 w-10 mb-4 relative z-10" />
-          <h3 className="text-xl font-semibold mb-2 relative z-10">Manage Materials</h3>
-          <p className="text-secondary-100 text-sm relative z-10">Add and organize your material inventory</p>
-          <ArrowUpRight className="absolute bottom-4 right-4 h-5 w-5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all duration-300" />
-        </Link>
-        
-        <Link
-          to="/reports"
-          className="group bg-gradient-to-br from-accent-500 to-accent-600 rounded-2xl p-8 text-white hover:from-accent-600 hover:to-accent-700 transition-all duration-300 shadow-lg shadow-accent-500/25 hover:shadow-xl hover:shadow-accent-500/30 hover:-translate-y-1 card-hover relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
-          <BarChart3 className="h-10 w-10 mb-4 relative z-10" />
-          <h3 className="text-xl font-semibold mb-2 relative z-10">View Reports</h3>
-          <p className="text-accent-100 text-sm relative z-10">Analyze costs and generate reports</p>
-          <ArrowUpRight className="absolute bottom-4 right-4 h-5 w-5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all duration-300" />
-        </Link>
+      {/* Visual Analytics & Cost Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Cost Structure Pie */}
+        <div className="fresh-card p-5 lg:col-span-1 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-sm font-bold text-slate-900">Total Spend Distribution</h3>
+              <span className="text-xs font-semibold text-slate-400">All Active BOMs</span>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">Breakdown between ingredients, labor, logistics, & margins.</p>
+            
+            <div className="h-48 w-full flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={costDistributionData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={80}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {costDistributionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(val: any) => [formatCurrency(Number(val), currency), 'Amount']}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-3 border-t border-slate-100">
+            {costDistributionData.map((item) => (
+              <div key={item.name} className="flex items-center justify-between text-xs">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="text-slate-600 font-medium">{item.name}</span>
+                </div>
+                <span className="font-bold text-slate-900">{formatCurrency(item.value, currency)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Batch Cost Comparison Chart */}
+        <div className="fresh-card p-5 lg:col-span-2 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-sm font-bold text-slate-900">Production Batch Value Comparison</h3>
+              <Link to="/reports" className="text-xs font-semibold text-emerald-700 hover:underline">
+                View Full Reports
+              </Link>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">Total manufacturing value per BOM configuration.</p>
+
+            <div className="h-56 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={batchTrendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="totalColor" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#059669" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#059669" stopOpacity={0.0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} tickFormatter={(val) => `₹${(val/1000).toFixed(0)}k`} />
+                  <Tooltip 
+                    formatter={(val: any) => [formatCurrency(Number(val), currency), 'Value']}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                  />
+                  <Area type="monotone" dataKey="total" stroke="#059669" strokeWidth={2.5} fillOpacity={1} fill="url(#totalColor)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              Real-time calculations updated automatically with inventory prices.
+            </span>
+            <span className="font-semibold text-slate-700">Total: {boms.length} BOMs</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent BOMs Table */}
+      <div className="fresh-card overflow-hidden">
+        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">Recent Recipe & Manufacturing BOMs</h2>
+            <p className="text-xs text-slate-500">Active bill of materials with unit economics and suggested wholesale prices.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/boms"
+              className="inline-flex items-center px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
+            >
+              <span>View All ({boms.length})</span>
+              <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+            </Link>
+          </div>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          {boms.slice(0, 5).map((bom) => (
+            <div
+              key={bom.id}
+              className="p-4 sm:p-5 hover:bg-slate-50/80 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+            >
+              <div className="space-y-1 max-w-xl">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono font-bold text-slate-400">{bom.projectCode || 'BOM'}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-md font-bold bg-emerald-50 text-emerald-800 border border-emerald-100">
+                    v{bom.version}
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                    bom.status === 'active' 
+                      ? 'bg-emerald-100 text-emerald-800' 
+                      : bom.status === 'draft'
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {bom.status}
+                  </span>
+                  {bom.storageCondition && (
+                    <span className="text-[10px] text-cyan-700 bg-cyan-50 border border-cyan-100 px-2 py-0.5 rounded-md font-semibold">
+                      {bom.storageCondition}
+                    </span>
+                  )}
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">{bom.name}</h4>
+                <p className="text-xs text-slate-500 line-clamp-1">{bom.description || 'No description provided'}</p>
+              </div>
+
+              <div className="flex items-center justify-between md:justify-end gap-6">
+                <div className="text-right">
+                  <p className="text-xs text-slate-400 font-medium">Batch Grand Total</p>
+                  <p className="text-base font-extrabold text-slate-900 font-display">
+                    {formatCurrency(bom.grandTotal, currency)}
+                  </p>
+                  {bom.costPerUnit && (
+                    <p className="text-[11px] text-emerald-700 font-semibold">
+                      {formatCurrency(bom.costPerUnit, currency)} / unit
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setCurrentBOM(bom);
+                      navigate('/calculator');
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors shadow-xs"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => duplicateBOM(bom.id)}
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    title="Duplicate BOM"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => exportToPDF(bom, { format: 'pdf', includeCosts: true, includeLabor: true, includeSummary: true })}
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                    title="Export PDF"
+                  >
+                    <Download className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
