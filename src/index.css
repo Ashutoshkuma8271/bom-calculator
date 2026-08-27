@@ -6,6 +6,11 @@
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
 }
 
 .font-display {
@@ -19,6 +24,12 @@ body {
   background-color: #f8fafc;
   color: #0f172a;
   overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+html.dark body {
+  background-color: #060911;
+  color: #f1f5f9;
 }
 
 #root {
@@ -36,6 +47,11 @@ body {
   color: #064e3b;
 }
 
+html.dark ::selection {
+  background-color: #065f46;
+  color: #a7f3d0;
+}
+
 /* Clean custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -46,13 +62,25 @@ body {
   background: #f1f5f9;
 }
 
+html.dark ::-webkit-scrollbar-track {
+  background: #0b1120;
+}
+
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 9999px;
 }
 
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 
 /* Focus styles */
@@ -72,12 +100,23 @@ button, a, input, select, textarea {
   border: 1px solid rgba(226, 232, 240, 0.85);
   border-radius: 20px;
   box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 2px 6px -2px rgba(15, 23, 42, 0.02);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .fresh-card:hover {
-  border-color: rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.35);
   box-shadow: 0 12px 28px -6px rgba(6, 78, 59, 0.08), 0 6px 12px -4px rgba(6, 78, 59, 0.03);
+}
+
+html.dark .fresh-card {
+  background: #0f172a;
+  border: 1px solid rgba(51, 65, 85, 0.7);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
+}
+
+html.dark .fresh-card:hover {
+  border-color: rgba(16, 185, 129, 0.45);
+  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.65), 0 0 15px 1px rgba(16, 185, 129, 0.08);
 }
 
 /* Glassmorphism surfaces */
@@ -86,6 +125,13 @@ button, a, input, select, textarea {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+html.dark .glass-panel {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(51, 65, 85, 0.6);
 }
 
 .glass-dark {
@@ -115,17 +161,36 @@ button, a, input, select, textarea {
   background-clip: text;
 }
 
+html.dark .gradient-text-fresh {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #6ee7b7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* Modern inputs */
 input, select, textarea {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
+  color: #0f172a;
+}
+
+html.dark input, html.dark select, html.dark textarea {
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #f8fafc;
 }
 
 input:focus, select:focus, textarea:focus {
   border-color: #10b981;
   box-shadow: 0 0 0 3.5px rgba(16, 185, 129, 0.15);
   outline: none;
+}
+
+html.dark input:focus, html.dark select:focus, html.dark textarea:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3.5px rgba(16, 185, 129, 0.25);
 }
 
 /* Range input slider styling */
@@ -159,4 +224,3 @@ input[type="range"] {
 .pulse-glow {
   animation: pulseGlow 2.5s infinite;
 }
-

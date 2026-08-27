@@ -1,6 +1,6 @@
 {
   "name": "BOM Calculator",
-  "description": "Professional Bill of Materials Management, Cost Estimation, and Material Tracking Application",
+  "description": "Professional Bill of Materials Management, Cost Estimation, Recipe Formulation, and Cold-Chain Tracking Application for Akira Fresh Gourmet Ready-to-Cook Foods",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

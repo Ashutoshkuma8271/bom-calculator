@@ -9,24 +9,13 @@ import {
   Download, 
   FileSpreadsheet, 
   Calculator, 
-  DollarSign, 
   Clock, 
-  TrendingUp, 
   Sparkles,
-  Layers,
-  Percent,
-  CheckCircle,
-  AlertTriangle,
   RotateCcw,
   Flame,
-  Snowflake,
   Package,
-  ArrowRight,
-  Info,
   Sliders,
-  ChevronDown,
-  X,
-  Check
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
@@ -34,7 +23,7 @@ import { toast } from 'sonner';
 import useBOMStore from '../stores/bomStore';
 import { formatCurrency, generateId } from '../lib/utils';
 import { exportToExcel, exportToPDF } from '../lib/export';
-import { BOM, BOMFormData, BOMItem, BOMLaborItem, ExportOptions } from '../types';
+import { BOM, BOMFormData } from '../types';
 
 const bomSchema = z.object({
   name: z.string().min(1, 'BOM name is required'),
@@ -87,7 +76,6 @@ const BOMCalculator: React.FC = () => {
     updateBOM, 
     calculateBOMTotals,
     setCurrentBOM,
-    duplicateBOM,
     currency
   } = useBOMStore();
 
@@ -361,21 +349,21 @@ const BOMCalculator: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-2xl bg-emerald-700 text-white shadow-sm">
+            <div className="p-2 rounded-2xl bg-emerald-600 dark:bg-emerald-500 text-white shadow-xs">
               <Calculator className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight font-display">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display">
                   {currentBOM ? `Edit BOM: ${currentBOM.name}` : 'BOM Recipe & Cost Calculator'}
                 </h1>
                 {currentBOM && (
-                  <span className="text-xs px-2 py-0.5 rounded-md font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  <span className="text-xs px-2 py-0.5 rounded-md font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                     v{currentBOM.version}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500">Live ingredient yield calculations, blast freezing labor, and unit economics.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Live ingredient yield calculations, blast freezing labor, and unit economics.</p>
             </div>
           </div>
         </div>
@@ -386,9 +374,9 @@ const BOMCalculator: React.FC = () => {
             whileTap={{ scale: 0.98 }}
             type="button"
             onClick={() => setTemplateModalOpen(true)}
-            className="inline-flex items-center px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all"
+            className="inline-flex items-center px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all"
           >
-            <Sparkles className="h-4 w-4 mr-1.5 text-emerald-600" />
+            <Sparkles className="h-4 w-4 mr-1.5 text-emerald-600 dark:text-emerald-400" />
             <span>Load Preset Recipe</span>
           </motion.button>
 
@@ -401,7 +389,7 @@ const BOMCalculator: React.FC = () => {
               reset(defaultValues);
               toast.info('Calculator reset to blank state');
             }}
-            className="inline-flex items-center px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-all"
+            className="inline-flex items-center px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold transition-all"
             title="Reset Form"
           >
             <RotateCcw className="h-4 w-4" />
@@ -412,9 +400,9 @@ const BOMCalculator: React.FC = () => {
             whileTap={{ scale: 0.98 }}
             type="button"
             onClick={handleExportExcel}
-            className="inline-flex items-center px-3.5 py-2 rounded-xl border border-emerald-200 hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition-all"
+            className="inline-flex items-center px-3.5 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800/80 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-all"
           >
-            <FileSpreadsheet className="h-4 w-4 mr-1.5 text-emerald-600" />
+            <FileSpreadsheet className="h-4 w-4 mr-1.5 text-emerald-600 dark:text-emerald-400" />
             <span>Excel</span>
           </motion.button>
 
@@ -423,9 +411,9 @@ const BOMCalculator: React.FC = () => {
             whileTap={{ scale: 0.98 }}
             type="button"
             onClick={handleExportPDF}
-            className="inline-flex items-center px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-bold transition-all"
+            className="inline-flex items-center px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all"
           >
-            <Download className="h-4 w-4 mr-1.5 text-slate-600" />
+            <Download className="h-4 w-4 mr-1.5 text-slate-600 dark:text-slate-400" />
             <span>PDF</span>
           </motion.button>
 
@@ -447,43 +435,43 @@ const BOMCalculator: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           {/* General & Batch Configuration Card */}
           <div className="fresh-card p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center space-x-2">
-                <Flame className="h-4 w-4 text-emerald-600" />
-                <h2 className="text-sm font-bold text-slate-900 font-display">Batch & Product Specification</h2>
+                <Flame className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white font-display">Batch & Product Specification</h2>
               </div>
-              <span className="text-[11px] font-semibold text-slate-400">Step 1 of 3</span>
+              <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">Step 1 of 3</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Product / Recipe BOM Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   {...register('name')}
                   type="text"
                   placeholder="e.g. Akira Gourmet Chicken Cheese Momos"
-                  className="w-full px-3.5 py-2 text-sm text-slate-900 font-medium"
+                  className="w-full px-3.5 py-2 text-sm text-slate-900 dark:text-white font-medium"
                 />
                 {errors.name && <p className="text-xs text-rose-500 mt-1">{errors.name.message}</p>}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Project / SKU Code</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Project / SKU Code</label>
                 <input
                   {...register('projectCode')}
                   type="text"
                   placeholder="e.g. AF-MOM-001"
-                  className="w-full px-3.5 py-2 text-sm text-slate-900 font-medium font-mono"
+                  className="w-full px-3.5 py-2 text-sm text-slate-900 dark:text-white font-medium font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Category</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Category</label>
                 <select
                   {...register('category')}
-                  className="w-full px-3.5 py-2 text-sm text-slate-900 font-medium"
+                  className="w-full px-3.5 py-2 text-sm text-slate-900 dark:text-white font-medium"
                 >
                   <option value="Food & Ready-to-Cook">Food & Ready-to-Cook</option>
                   <option value="Meat & Poultry">Meat & Poultry</option>
@@ -494,30 +482,30 @@ const BOMCalculator: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Batch Output Size <span className="text-slate-400 font-normal">(Units per batch run)</span>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Batch Output Size <span className="text-slate-400 dark:text-slate-500 font-normal">(Units per batch run)</span>
                 </label>
                 <div className="flex items-center space-x-2">
                   <input
                     {...register('batchQuantity', { valueAsNumber: true })}
                     type="number"
                     min="1"
-                    className="w-2/3 px-3.5 py-2 text-sm text-slate-900 font-bold font-mono"
+                    className="w-2/3 px-3.5 py-2 text-sm text-slate-900 dark:text-white font-bold font-mono"
                   />
                   <input
                     {...register('batchUnit')}
                     type="text"
                     placeholder="boxes / pcs"
-                    className="w-1/3 px-3 py-2 text-sm text-slate-700 font-medium text-center"
+                    className="w-1/3 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 font-medium text-center"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Storage Condition</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Storage Condition</label>
                 <select
                   {...register('storageCondition')}
-                  className="w-full px-3.5 py-2 text-sm text-slate-900 font-medium"
+                  className="w-full px-3.5 py-2 text-sm text-slate-900 dark:text-white font-medium"
                 >
                   <option value="Frozen (-18°C)">Frozen (-18°C) • Blast Freezing</option>
                   <option value="Chilled (2-4°C)">Chilled (2-4°C) • Cold Room</option>
@@ -526,26 +514,26 @@ const BOMCalculator: React.FC = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 mb-1">Recipe / Production Notes</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Recipe / Production Notes</label>
                 <input
                   {...register('description')}
                   type="text"
                   placeholder="e.g. Requires -40°C IQF tunnel freeze for 25 mins prior to nitrogen packaging."
-                  className="w-full px-3.5 py-2 text-sm text-slate-700"
+                  className="w-full px-3.5 py-2 text-sm text-slate-700 dark:text-slate-200"
                 />
               </div>
             </div>
           </div>
 
           {/* Tab Navigation for Composition Details */}
-          <div className="flex overflow-x-auto pb-1 border-b border-slate-200 space-x-2 scrollbar-none">
+          <div className="flex overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800 space-x-2 scrollbar-none">
             <button
               type="button"
               onClick={() => setActiveTab('materials')}
               className={`pb-3 px-3 text-xs font-extrabold flex items-center space-x-2 border-b-2 whitespace-nowrap transition-colors ${
                 activeTab === 'materials'
-                  ? 'border-emerald-600 text-emerald-800'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
+                  ? 'border-emerald-600 text-emerald-800 dark:text-emerald-400 dark:border-emerald-400'
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               <Package className="h-4 w-4 shrink-0" />
@@ -556,8 +544,8 @@ const BOMCalculator: React.FC = () => {
               onClick={() => setActiveTab('labor')}
               className={`pb-3 px-3 text-xs font-extrabold flex items-center space-x-2 border-b-2 whitespace-nowrap transition-colors ${
                 activeTab === 'labor'
-                  ? 'border-emerald-600 text-emerald-800'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
+                  ? 'border-emerald-600 text-emerald-800 dark:text-emerald-400 dark:border-emerald-400'
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               <Clock className="h-4 w-4 shrink-0" />
@@ -568,8 +556,8 @@ const BOMCalculator: React.FC = () => {
               onClick={() => setActiveTab('overheads')}
               className={`pb-3 px-3 text-xs font-extrabold flex items-center space-x-2 border-b-2 whitespace-nowrap transition-colors ${
                 activeTab === 'overheads'
-                  ? 'border-emerald-600 text-emerald-800'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
+                  ? 'border-emerald-600 text-emerald-800 dark:text-emerald-400 dark:border-emerald-400'
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               <Sliders className="h-4 w-4 shrink-0" />
@@ -586,8 +574,8 @@ const BOMCalculator: React.FC = () => {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 font-display">Raw Ingredients & Packaging Components</h3>
-                  <p className="text-xs text-slate-500">Pick from inventory or input custom items with scrap/waste % allowance.</p>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">Raw Ingredients & Packaging Components</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Pick from inventory or input custom items with scrap/waste % allowance.</p>
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -604,7 +592,7 @@ const BOMCalculator: React.FC = () => {
                       category: materials[0]?.category || 'Proteins & Meats',
                     })
                   }
-                  className="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all border border-emerald-200/80"
+                  className="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-all border border-emerald-200/80 dark:border-emerald-800"
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" />
                   <span>Add Line Item</span>
@@ -625,18 +613,18 @@ const BOMCalculator: React.FC = () => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, height: 0, marginBottom: 0, overflow: 'hidden' }}
                         transition={{ duration: 0.2 }}
-                        className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:border-emerald-300 transition-all space-y-3"
+                        className="p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all space-y-3"
                       >
                         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
                           {/* Material Selector / Name */}
                           <div className="sm:col-span-5">
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
                               Ingredient / Material
                             </label>
                             <select
                               value={item?.materialId || ''}
                               onChange={(e) => handleMaterialSelect(index, e.target.value)}
-                              className="w-full px-2.5 py-1.5 text-xs text-slate-900 font-semibold"
+                              className="w-full px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-semibold"
                             >
                               <option value="">-- Choose from Inventory --</option>
                               {materials.map((m) => (
@@ -649,7 +637,7 @@ const BOMCalculator: React.FC = () => {
 
                           {/* Quantity */}
                           <div className="sm:col-span-2">
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
                               Batch Qty
                             </label>
                             <div className="flex items-center space-x-1">
@@ -658,15 +646,15 @@ const BOMCalculator: React.FC = () => {
                                 type="number"
                                 step="0.01"
                                 min="0.001"
-                                className="w-full px-2 py-1.5 text-xs text-slate-900 font-bold"
+                                className="w-full px-2 py-1.5 text-xs text-slate-900 dark:text-white font-bold"
                               />
-                              <span className="text-[10px] font-bold text-slate-500 w-8">{item?.unit}</span>
+                              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 w-8">{item?.unit}</span>
                             </div>
                           </div>
 
                           {/* Unit Cost */}
                           <div className="sm:col-span-2">
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
                               Rate / Unit
                             </label>
                             <input
@@ -674,13 +662,13 @@ const BOMCalculator: React.FC = () => {
                               type="number"
                               step="0.01"
                               min="0"
-                              className="w-full px-2 py-1.5 text-xs text-slate-900 font-medium font-mono"
+                              className="w-full px-2 py-1.5 text-xs text-slate-900 dark:text-white font-medium font-mono"
                             />
                           </div>
 
                           {/* Waste % */}
                           <div className="sm:col-span-2">
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
                               Scrap / Waste %
                             </label>
                             <input
@@ -690,7 +678,7 @@ const BOMCalculator: React.FC = () => {
                               min="0"
                               max="100"
                               placeholder="0%"
-                              className="w-full px-2 py-1.5 text-xs text-slate-700 font-mono"
+                              className="w-full px-2 py-1.5 text-xs text-slate-700 dark:text-slate-300 font-mono"
                             />
                           </div>
 
@@ -701,7 +689,7 @@ const BOMCalculator: React.FC = () => {
                               type="button"
                               onClick={() => removeItem(index)}
                               disabled={itemFields.length <= 1}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-30"
+                              className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors disabled:opacity-30"
                               title="Remove Line"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -709,16 +697,16 @@ const BOMCalculator: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/50">
-                          <span className="text-[11px] text-slate-500 font-medium">
+                        <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/50 dark:border-slate-800">
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                             {item?.category && (
-                              <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600 font-semibold mr-2">
+                              <span className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold mr-2">
                                 {item.category}
                               </span>
                             )}
                             Line Total (with {item?.wastePercentage || 0}% allowance):
                           </span>
-                          <span className="font-bold text-slate-900 font-mono">
+                          <span className="font-bold text-slate-900 dark:text-white font-mono">
                             {formatCurrency(rowCost, currency)}
                           </span>
                         </div>
@@ -728,7 +716,7 @@ const BOMCalculator: React.FC = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center justify-between text-xs font-bold text-emerald-900">
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 rounded-xl border border-emerald-100 dark:border-emerald-800/60 flex items-center justify-between text-xs font-bold text-emerald-900 dark:text-emerald-300">
                 <span>Total Raw Materials & Ingredients Cost</span>
                 <span className="text-sm font-extrabold font-mono">{formatCurrency(calculatedTotals.totalMaterialCost || 0, currency)}</span>
               </div>
@@ -744,8 +732,8 @@ const BOMCalculator: React.FC = () => {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 font-display">Labor & Machine Operations</h3>
-                  <p className="text-xs text-slate-500">Mincing, dumpling folding, blast freezing, nitrogen flush, quality inspections.</p>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">Labor & Machine Operations</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Mincing, dumpling folding, blast freezing, nitrogen flush, quality inspections.</p>
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -760,7 +748,7 @@ const BOMCalculator: React.FC = () => {
                       operationType: 'General Processing',
                     })
                   }
-                  className="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all border border-emerald-200/80"
+                  className="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-all border border-emerald-200/80 dark:border-emerald-800"
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" />
                   <span>Add Operation</span>
@@ -781,17 +769,17 @@ const BOMCalculator: React.FC = () => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, height: 0, marginBottom: 0, overflow: 'hidden' }}
                         transition={{ duration: 0.2 }}
-                        className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:border-emerald-300 transition-all space-y-3"
+                        className="p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all space-y-3"
                       >
                         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
                           <div className="sm:col-span-6">
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
                               Operation / Role
                             </label>
                             <select
                               value={labor?.laborId || ''}
                               onChange={(e) => handleLaborSelect(index, e.target.value)}
-                              className="w-full px-2.5 py-1.5 text-xs text-slate-900 font-semibold"
+                              className="w-full px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-semibold"
                             >
                               <option value="">-- Choose Processing Operation --</option>
                               {laborCosts.map((l) => (
@@ -803,7 +791,7 @@ const BOMCalculator: React.FC = () => {
                           </div>
 
                           <div className="sm:col-span-2">
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
                               Total Hours
                             </label>
                             <input
@@ -811,12 +799,12 @@ const BOMCalculator: React.FC = () => {
                               type="number"
                               step="0.25"
                               min="0.1"
-                              className="w-full px-2 py-1.5 text-xs text-slate-900 font-bold font-mono"
+                              className="w-full px-2 py-1.5 text-xs text-slate-900 dark:text-white font-bold font-mono"
                             />
                           </div>
 
                           <div className="sm:col-span-3">
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
                               Hourly Rate ({currency})
                             </label>
                             <input
@@ -824,7 +812,7 @@ const BOMCalculator: React.FC = () => {
                               type="number"
                               step="10"
                               min="0"
-                              className="w-full px-2 py-1.5 text-xs text-slate-900 font-medium font-mono"
+                              className="w-full px-2 py-1.5 text-xs text-slate-900 dark:text-white font-medium font-mono"
                             />
                           </div>
 
@@ -833,7 +821,7 @@ const BOMCalculator: React.FC = () => {
                               whileTap={{ scale: 0.85 }}
                               type="button"
                               onClick={() => removeLabor(index)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
                               title="Remove Operation"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -841,11 +829,11 @@ const BOMCalculator: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/50">
-                          <span className="text-[11px] text-slate-500 font-medium">
+                        <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/50 dark:border-slate-800">
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                             {labor?.hours || 0} hrs @ {formatCurrency(labor?.hourlyRate || 0, currency)}/hr
                           </span>
-                          <span className="font-bold text-slate-900 font-mono">
+                          <span className="font-bold text-slate-900 dark:text-white font-mono">
                             {formatCurrency(rowLaborCost, currency)}
                           </span>
                         </div>
@@ -855,7 +843,7 @@ const BOMCalculator: React.FC = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-center justify-between text-xs font-bold text-blue-900">
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/60 rounded-xl border border-blue-100 dark:border-blue-800/60 flex items-center justify-between text-xs font-bold text-blue-900 dark:text-blue-300">
                 <span>Total Labor & Processing Cost</span>
                 <span className="text-sm font-extrabold font-mono">{formatCurrency(calculatedTotals.totalLaborCost || 0, currency)}</span>
               </div>
@@ -870,18 +858,18 @@ const BOMCalculator: React.FC = () => {
               className="fresh-card p-5 space-y-5"
             >
               <div>
-                <h3 className="text-sm font-bold text-slate-900 font-display">Overhead, Cold-Chain Utilities & Profit Markup</h3>
-                <p className="text-xs text-slate-500">Fine-tune power (blast freezer refrigeration), QA compliance, and target gross margin.</p>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">Overhead, Cold-Chain Utilities & Profit Markup</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Fine-tune power (blast freezer refrigeration), QA compliance, and target gross margin.</p>
               </div>
 
               <div className="space-y-6">
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                <div className="p-4 bg-slate-50 dark:bg-slate-900/80 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-bold text-slate-900">Overhead & Facility Utilities %</p>
-                      <p className="text-[11px] text-slate-500">Refrigeration power, factory rent, quality inspections.</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">Overhead & Facility Utilities %</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Refrigeration power, factory rent, quality inspections.</p>
                     </div>
-                    <span className="text-base font-extrabold text-slate-900 font-mono">
+                    <span className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
                       {watchedValues.overheadPercentage}%
                     </span>
                   </div>
@@ -893,20 +881,20 @@ const BOMCalculator: React.FC = () => {
                     step="0.5"
                     className="w-full accent-emerald-600 cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                  <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 font-medium">
                     <span>0% (Lean)</span>
                     <span>10% (Standard Food Plant)</span>
                     <span>30% (High Utility)</span>
                   </div>
                 </div>
 
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                <div className="p-4 bg-slate-50 dark:bg-slate-900/80 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-bold text-slate-900">Target Profit Margin %</p>
-                      <p className="text-[11px] text-slate-500">Markup applied to total production costs to determine selling price.</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">Target Profit Margin %</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Markup applied to total production costs to determine selling price.</p>
                     </div>
-                    <span className="text-base font-extrabold text-emerald-700 font-mono">
+                    <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
                       +{watchedValues.profitMargin}%
                     </span>
                   </div>
@@ -918,7 +906,7 @@ const BOMCalculator: React.FC = () => {
                     step="1"
                     className="w-full accent-emerald-600 cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                  <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 font-medium">
                     <span>0% (At Cost)</span>
                     <span>25% (Wholesale Target)</span>
                     <span>50%+ (Premium Retail)</span>
@@ -931,20 +919,20 @@ const BOMCalculator: React.FC = () => {
 
         {/* Right Sticky Sidebar: Live Economics & Pricing Summary */}
         <div className="space-y-5">
-          <div className="fresh-card p-5 bg-white border-emerald-200/80 shadow-premium sticky top-20 space-y-5">
+          <div className="fresh-card p-5 sticky top-20 space-y-5">
             {/* Header Badge */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center space-x-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Live Economics</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Live Economics</span>
               </div>
-              <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+              <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 rounded-full">
                 Batch: {watchedValues.batchQuantity || 1} {watchedValues.batchUnit || 'units'}
               </span>
             </div>
 
             {/* Grand Total Hero */}
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 text-white shadow-md space-y-1">
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 dark:from-emerald-950/80 dark:via-slate-900 dark:to-black text-white shadow-md space-y-1">
               <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Total Batch Cost & Margin</span>
               <p className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-white">
                 {formatCurrency(calculatedTotals.grandTotal || 0, currency)}
@@ -959,17 +947,17 @@ const BOMCalculator: React.FC = () => {
 
             {/* Visual Cost Composition Bar */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
                 <span>Cost Composition</span>
                 <span>100%</span>
               </div>
-              <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
+              <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
                 <div style={{ width: `${rawCostRatio}%` }} className="bg-emerald-600 transition-all duration-300" title={`Materials: ${rawCostRatio.toFixed(1)}%`} />
                 <div style={{ width: `${laborCostRatio}%` }} className="bg-sky-500 transition-all duration-300" title={`Labor: ${laborCostRatio.toFixed(1)}%`} />
                 <div style={{ width: `${overheadCostRatio}%` }} className="bg-amber-500 transition-all duration-300" title={`Overheads: ${overheadCostRatio.toFixed(1)}%`} />
                 <div style={{ width: `${profitCostRatio}%` }} className="bg-emerald-400 transition-all duration-300" title={`Profit: ${profitCostRatio.toFixed(1)}%`} />
               </div>
-              <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 pt-1">
+              <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 dark:text-slate-400 pt-1">
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-600" /> Ingredients ({rawCostRatio.toFixed(0)}%)</span>
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-sky-500" /> Labor ({laborCostRatio.toFixed(0)}%)</span>
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> Overheads ({overheadCostRatio.toFixed(0)}%)</span>
@@ -978,36 +966,36 @@ const BOMCalculator: React.FC = () => {
             </div>
 
             {/* Detailed Breakdown List */}
-            <div className="space-y-2.5 pt-2 border-t border-slate-100 text-xs">
-              <div className="flex justify-between text-slate-600">
+            <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+              <div className="flex justify-between text-slate-600 dark:text-slate-300">
                 <span>Raw Materials & Packaging</span>
-                <span className="font-bold text-slate-900 font-mono">{formatCurrency(calculatedTotals.totalMaterialCost || 0, currency)}</span>
+                <span className="font-bold text-slate-900 dark:text-white font-mono">{formatCurrency(calculatedTotals.totalMaterialCost || 0, currency)}</span>
               </div>
-              <div className="flex justify-between text-slate-600">
+              <div className="flex justify-between text-slate-600 dark:text-slate-300">
                 <span>Labor & Processing</span>
-                <span className="font-bold text-slate-900 font-mono">{formatCurrency(calculatedTotals.totalLaborCost || 0, currency)}</span>
+                <span className="font-bold text-slate-900 dark:text-white font-mono">{formatCurrency(calculatedTotals.totalLaborCost || 0, currency)}</span>
               </div>
-              <div className="flex justify-between text-slate-600">
+              <div className="flex justify-between text-slate-600 dark:text-slate-300">
                 <span>Overhead ({watchedValues.overheadPercentage}%)</span>
-                <span className="font-bold text-slate-900 font-mono">{formatCurrency(calculatedTotals.totalOverhead || 0, currency)}</span>
+                <span className="font-bold text-slate-900 dark:text-white font-mono">{formatCurrency(calculatedTotals.totalOverhead || 0, currency)}</span>
               </div>
-              <div className="flex justify-between text-emerald-700 font-semibold pt-1 border-t border-dashed border-slate-200">
+              <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold pt-1 border-t border-dashed border-slate-200 dark:border-slate-800">
                 <span>Net Profit Markup ({watchedValues.profitMargin}%)</span>
                 <span className="font-extrabold font-mono">{formatCurrency(calculatedTotals.totalProfit || 0, currency)}</span>
               </div>
             </div>
 
             {/* Suggested Selling Pricing */}
-            <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-100 space-y-2">
+            <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-800/60 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-900">Recommended Wholesale Price</span>
-                <span className="text-sm font-extrabold text-emerald-800 font-mono">
+                <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200">Recommended Wholesale Price</span>
+                <span className="text-sm font-extrabold text-emerald-700 dark:text-emerald-400 font-mono">
                   {formatCurrency(unitCost, currency)}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-slate-600 text-xs">
+              <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-xs">
                 <span>Suggested Retail MRP (1.35x)</span>
-                <span className="font-bold text-slate-900 font-mono">
+                <span className="font-bold text-slate-900 dark:text-white font-mono">
                   {formatCurrency(unitCost * 1.35, currency)}
                 </span>
               </div>
@@ -1035,7 +1023,7 @@ const BOMCalculator: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" 
+              className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm" 
               onClick={() => setTemplateModalOpen(false)} 
             />
             <motion.div 
@@ -1043,16 +1031,16 @@ const BOMCalculator: React.FC = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-              className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 z-10 space-y-4"
+              className="relative w-full max-w-2xl bg-white dark:bg-[#0f172a] rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 z-10 space-y-4"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 font-display">Load Akira Fresh Recipe Preset</h3>
-                  <p className="text-xs text-slate-500">Select a pre-configured BOM to quickly calculate custom batch yields.</p>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display">Load Akira Fresh Recipe Preset</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Select a pre-configured BOM to quickly calculate custom batch yields.</p>
                 </div>
                 <button
                   onClick={() => setTemplateModalOpen(false)}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -1065,17 +1053,17 @@ const BOMCalculator: React.FC = () => {
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleLoadTemplate(preset)}
-                    className="p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50 border border-slate-200/80 hover:border-emerald-300 cursor-pointer transition-all space-y-2 group"
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 cursor-pointer transition-all space-y-2 group"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-bold text-slate-400 group-hover:text-emerald-700">{preset.projectCode || 'AF-BOM'}</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      <span className="text-xs font-mono font-bold text-slate-400 dark:text-slate-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">{preset.projectCode || 'AF-BOM'}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                         {preset.batchQuantity} {preset.batchUnit}
                       </span>
                     </div>
-                    <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-900 font-display">{preset.name}</h4>
-                    <p className="text-xs text-slate-500 line-clamp-2">{preset.description}</p>
-                    <div className="pt-2 flex items-center justify-between text-xs text-emerald-700 font-bold border-t border-slate-200/50">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-display">{preset.name}</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{preset.description}</p>
+                    <div className="pt-2 flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-bold border-t border-slate-200/50 dark:border-slate-800">
                       <span className="font-mono">{formatCurrency(preset.grandTotal, currency)}</span>
                       <span>Use Template →</span>
                     </div>
@@ -1091,4 +1079,3 @@ const BOMCalculator: React.FC = () => {
 };
 
 export default BOMCalculator;
-

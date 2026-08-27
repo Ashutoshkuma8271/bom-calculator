@@ -1,18 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   BarChart3, 
-  PieChart as PieIcon, 
-  TrendingUp, 
-  DollarSign, 
-  Download, 
-  FileSpreadsheet, 
-  Layers, 
-  Calendar,
-  Filter,
-  CheckCircle2,
-  Snowflake,
-  Flame,
-  ArrowUpRight
+  Download 
 } from 'lucide-react';
 import { motion, type Variants } from 'motion/react';
 import { 
@@ -29,7 +18,8 @@ import {
 } from 'recharts';
 import useBOMStore from '../stores/bomStore';
 import { formatCurrency } from '../lib/utils';
-import { exportToExcel, exportToPDF } from '../lib/export';
+import { exportToPDF } from '../lib/export';
+import { useThemeStore } from '../stores/themeStore';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -52,13 +42,12 @@ const itemVariants: Variants = {
 };
 
 const Reports: React.FC = () => {
-  const { boms, materials, laborCosts, currency } = useBOMStore();
-  const [selectedBOMId, setSelectedBOMId] = useState<string>('all');
+  const { boms, currency } = useBOMStore();
+  const { theme } = useThemeStore();
 
   const totalValue = boms.reduce((sum, bom) => sum + bom.grandTotal, 0);
   const totalMaterialCost = boms.reduce((sum, bom) => sum + bom.totalMaterialCost, 0);
   const totalLaborCost = boms.reduce((sum, bom) => sum + bom.totalLaborCost, 0);
-  const totalOverhead = boms.reduce((sum, bom) => sum + bom.totalOverhead, 0);
   const totalProfit = boms.reduce((sum, bom) => sum + bom.totalProfit, 0);
 
   // Category spend
@@ -93,6 +82,10 @@ const Reports: React.FC = () => {
     });
   };
 
+  const tooltipBg = theme === 'dark' ? '#0f172a' : '#ffffff';
+  const tooltipBorder = theme === 'dark' ? '#334155' : '#e2e8f0';
+  const tooltipText = theme === 'dark' ? '#f8fafc' : '#0f172a';
+
   return (
     <motion.div 
       variants={containerVariants}
@@ -104,14 +97,14 @@ const Reports: React.FC = () => {
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-2xl bg-emerald-700 text-white shadow-sm">
+            <div className="p-2 rounded-2xl bg-emerald-600 dark:bg-emerald-500 text-white shadow-xs">
               <BarChart3 className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight font-display">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display">
                 Cost Analytics & Margin Intelligence
               </h1>
-              <p className="text-xs text-slate-500">Comprehensive yield ratios, category spend distribution, and margin metrics.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Comprehensive yield ratios, category spend distribution, and margin metrics.</p>
             </div>
           </div>
         </div>
@@ -132,39 +125,39 @@ const Reports: React.FC = () => {
       {/* KPI Cards */}
       <motion.div variants={containerVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div variants={itemVariants} whileHover={{ y: -3, transition: { duration: 0.2 } }} className="fresh-card p-4">
-          <span className="text-[11px] uppercase font-bold text-slate-400 block">Total Pipeline Value</span>
-          <span className="text-2xl font-extrabold text-slate-900 font-display font-mono mt-0.5 block">
+          <span className="text-[11px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Total Pipeline Value</span>
+          <span className="text-2xl font-extrabold text-slate-900 dark:text-white font-display font-mono mt-0.5 block">
             {formatCurrency(totalValue, currency)}
           </span>
-          <span className="text-xs text-slate-500 mt-1 block">Across {boms.length} Active BOMs</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block">Across {boms.length} Active BOMs</span>
         </motion.div>
 
         <motion.div variants={itemVariants} whileHover={{ y: -3, transition: { duration: 0.2 } }} className="fresh-card p-4">
-          <span className="text-[11px] uppercase font-bold text-slate-400 block">Raw Ingredients Spend</span>
-          <span className="text-2xl font-extrabold text-emerald-800 font-display font-mono mt-0.5 block">
+          <span className="text-[11px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Raw Ingredients Spend</span>
+          <span className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-display font-mono mt-0.5 block">
             {formatCurrency(totalMaterialCost, currency)}
           </span>
-          <span className="text-xs text-slate-500 mt-1 block">
+          <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block">
             {((totalMaterialCost / (totalValue || 1)) * 100).toFixed(1)}% of total cost
           </span>
         </motion.div>
 
         <motion.div variants={itemVariants} whileHover={{ y: -3, transition: { duration: 0.2 } }} className="fresh-card p-4">
-          <span className="text-[11px] uppercase font-bold text-slate-400 block">Total Labor & Processing</span>
-          <span className="text-2xl font-extrabold text-sky-800 font-display font-mono mt-0.5 block">
+          <span className="text-[11px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Total Labor & Processing</span>
+          <span className="text-2xl font-extrabold text-sky-600 dark:text-sky-400 font-display font-mono mt-0.5 block">
             {formatCurrency(totalLaborCost, currency)}
           </span>
-          <span className="text-xs text-slate-500 mt-1 block">
+          <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block">
             {((totalLaborCost / (totalValue || 1)) * 100).toFixed(1)}% of total cost
           </span>
         </motion.div>
 
-        <motion.div variants={itemVariants} whileHover={{ y: -3, transition: { duration: 0.2 } }} className="fresh-card p-4 bg-emerald-950 text-white">
-          <span className="text-[11px] uppercase font-bold text-emerald-200 block">Total Realized Profit Margin</span>
+        <motion.div variants={itemVariants} whileHover={{ y: -3, transition: { duration: 0.2 } }} className="fresh-card p-4 bg-emerald-950 dark:bg-emerald-950/80 text-white border-emerald-800">
+          <span className="text-[11px] uppercase font-bold text-emerald-300 block">Total Realized Profit Margin</span>
           <span className="text-2xl font-extrabold text-white font-display font-mono mt-0.5 block">
             {formatCurrency(totalProfit, currency)}
           </span>
-          <span className="text-xs text-emerald-200 mt-1 block">Target margin buffer</span>
+          <span className="text-xs text-emerald-200/90 mt-1 block">Target margin buffer</span>
         </motion.div>
       </motion.div>
 
@@ -173,8 +166,8 @@ const Reports: React.FC = () => {
         {/* Ingredient Category Spend Breakdown */}
         <motion.div variants={itemVariants} className="fresh-card p-5 space-y-4">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 font-display">Material Cost by Ingredient Category</h3>
-            <p className="text-xs text-slate-500">Distribution across Meats, Spices, Dairy, Packaging, and Cold Chain.</p>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">Material Cost by Ingredient Category</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Distribution across Meats, Spices, Dairy, Packaging, and Cold Chain.</p>
           </div>
 
           <div className="h-64 w-full flex items-center justify-center">
@@ -195,20 +188,27 @@ const Reports: React.FC = () => {
                 </Pie>
                 <Tooltip 
                   formatter={(val: any) => [formatCurrency(Number(val), currency), 'Spend']}
-                  contentStyle={{ borderRadius: '16px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                  contentStyle={{ 
+                    backgroundColor: tooltipBg, 
+                    borderColor: tooltipBorder, 
+                    color: tooltipText, 
+                    borderRadius: '16px', 
+                    fontSize: '12px',
+                    fontWeight: 'bold' 
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             {categoryChartData.map((c) => (
-              <div key={c.name} className="flex items-center justify-between text-xs p-2 rounded-xl bg-slate-50 border border-slate-100/80">
+              <div key={c.name} className="flex items-center justify-between text-xs p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100/80 dark:border-slate-800">
                 <div className="flex items-center space-x-1.5 truncate">
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
-                  <span className="text-slate-700 font-medium truncate">{c.name}</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-medium truncate">{c.name}</span>
                 </div>
-                <span className="font-bold text-slate-900 font-mono ml-1">{formatCurrency(c.value, currency)}</span>
+                <span className="font-bold text-slate-900 dark:text-white font-mono ml-1">{formatCurrency(c.value, currency)}</span>
               </div>
             ))}
           </div>
@@ -217,8 +217,8 @@ const Reports: React.FC = () => {
         {/* Batch Cost vs Profit Analysis */}
         <motion.div variants={itemVariants} className="fresh-card p-5 space-y-4">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 font-display">Production Cost vs. Margin Markup</h3>
-            <p className="text-xs text-slate-500">Comparative view per manufactured batch run.</p>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">Production Cost vs. Margin Markup</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Comparative view per manufactured batch run.</p>
           </div>
 
           <div className="h-64 w-full">
@@ -228,7 +228,14 @@ const Reports: React.FC = () => {
                 <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} tickFormatter={(val) => `₹${(val/1000).toFixed(0)}k`} />
                 <Tooltip 
                   formatter={(val: any) => [formatCurrency(Number(val), currency), 'Value']}
-                  contentStyle={{ borderRadius: '16px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                  contentStyle={{ 
+                    backgroundColor: tooltipBg, 
+                    borderColor: tooltipBorder, 
+                    color: tooltipText, 
+                    borderRadius: '16px', 
+                    fontSize: '12px',
+                    fontWeight: 'bold' 
+                  }}
                 />
                 <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
                 <Bar dataKey="ProductionCost" name="Base Production Cost" fill="#047857" radius={[4, 4, 0, 0]} />
@@ -237,9 +244,9 @@ const Reports: React.FC = () => {
             </ResponsiveContainer>
           </div>
 
-          <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs text-slate-600">
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
             <span>Average Margin across portfolio:</span>
-            <span className="font-extrabold text-emerald-800 font-mono">
+            <span className="font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
               {boms.length > 0 ? (boms.reduce((s, b) => s + b.profitMargin, 0) / boms.length).toFixed(1) : 0}%
             </span>
           </div>
