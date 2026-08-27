@@ -13,7 +13,8 @@ import {
   ChevronRight,
   Download,
   Copy,
-  CheckCircle2
+  CheckCircle2,
+  ShieldCheck
 } from 'lucide-react';
 import { motion, type Variants } from 'motion/react';
 import { 
@@ -31,6 +32,7 @@ import useBOMStore from '../stores/bomStore';
 import { formatCurrency } from '../lib/utils';
 import { exportToPDF } from '../lib/export';
 import { useThemeStore } from '../stores/themeStore';
+import { getProductImage, AKIRA_PRODUCT_IMAGES } from '../lib/productImages';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -117,12 +119,14 @@ const Dashboard: React.FC = () => {
 
   const quickTemplates = [
     {
-      title: 'Akira Momos Batch',
+      title: 'Chicken Cheese Momos',
       category: 'Food & Ready-to-Cook',
       yield: '5,000 Pcs (500 Boxes)',
       code: 'AF-MOM-001',
-      icon: '🥟',
-      desc: 'Chicken breast, cheddar-mozzarella blend, delicate wrappers & blast freezing.',
+      image: AKIRA_PRODUCT_IMAGES[0].url,
+      tag: 'Ready-to-Cook',
+      temp: '-18°C Frozen',
+      desc: 'Antibiotic-free chicken breast, molten cheese blend, artisan wrappers & blast freezing.',
       action: () => {
         const momoBOM = boms.find(b => b.projectCode === 'AF-MOM-001') || boms[0];
         if (momoBOM) {
@@ -134,11 +138,13 @@ const Dashboard: React.FC = () => {
       }
     },
     {
-      title: 'Royal Seekh Kebab Batch',
+      title: 'Royal Mutton Seekh Kebab',
       category: 'Food & Ready-to-Cook',
       yield: '1,000 Packs (4k Skewers)',
       code: 'AF-KEB-002',
-      icon: '🍢',
+      image: AKIRA_PRODUCT_IMAGES[1].url,
+      tag: 'Gourmet Kebabs',
+      temp: '-18°C Frozen',
       desc: 'Himalayan mutton mince, Kashmiri saffron spice blend & flash char grill.',
       action: () => {
         const kebabBOM = boms.find(b => b.projectCode === 'AF-KEB-002') || boms[0];
@@ -151,16 +157,18 @@ const Dashboard: React.FC = () => {
       }
     },
     {
-      title: 'Cold-Chain Home Shipper',
-      category: 'Cold Chain & Logistics',
-      yield: '500 Delivery Boxes',
-      code: 'AF-LOG-003',
-      icon: '❄️',
-      desc: 'High-density EPS insulated thermal boxes with -15°C refrigerant gel sheets.',
+      title: 'Smoky Chicken Tikka',
+      category: 'Food & Ready-to-Cook',
+      yield: '800 Packs (320kg)',
+      code: 'AF-TIK-003',
+      image: AKIRA_PRODUCT_IMAGES[2].url,
+      tag: 'Tandoori Special',
+      temp: '-18°C Frozen',
+      desc: 'Tender chicken breast cubes marinated with Kashmiri chili & cold-pressed mustard oil.',
       action: () => {
-        const logBOM = boms.find(b => b.projectCode === 'AF-LOG-003') || boms[0];
-        if (logBOM) {
-          duplicateBOM(logBOM.id);
+        const tikkaBOM = boms.find(b => b.projectCode === 'AF-TIK-003') || boms[0];
+        if (tikkaBOM) {
+          duplicateBOM(tikkaBOM.id);
           navigate('/boms');
         } else {
           navigate('/calculator');
@@ -168,15 +176,22 @@ const Dashboard: React.FC = () => {
       }
     },
     {
-      title: 'Blank Custom BOM',
-      category: 'Custom Calculation',
-      yield: 'Custom Units',
-      code: 'NEW-BOM',
-      icon: '⚡',
-      desc: 'Build from scratch with raw materials, labor steps, packaging, and custom margin.',
+      title: 'Crispy Chicken Patty',
+      category: 'Food & Ready-to-Cook',
+      yield: '1,200 Packs (4.8k Pcs)',
+      code: 'AF-PAT-004',
+      image: AKIRA_PRODUCT_IMAGES[3].url,
+      tag: 'Breaded & Pre-fried',
+      temp: '-18°C Frozen',
+      desc: 'Japanese panko crunchy needle coating over juicy seasoned chicken mince patty.',
       action: () => {
-        setCurrentBOM(null);
-        navigate('/calculator');
+        const pattyBOM = boms.find(b => b.projectCode === 'AF-PAT-004') || boms[0];
+        if (pattyBOM) {
+          duplicateBOM(pattyBOM.id);
+          navigate('/boms');
+        } else {
+          navigate('/calculator');
+        }
       }
     },
   ];
@@ -269,17 +284,17 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Quick Launch Akira Fresh Recipe Presets */}
-      <motion.div variants={itemVariants} className="space-y-3">
+      <motion.div variants={itemVariants} className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 font-display">
               <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Akira Fresh Recipe & Batch Presets</span>
+              <span>Akira Signature Ready-to-Cook Presets</span>
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">1-Click clone recipes with pre-configured ingredient yields and blast-freezing operations.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">1-Click clone recipes with pre-configured ingredient yields, meats, spices & blast-freezing operations.</p>
           </div>
           <Link to="/calculator" className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1">
-            <span>Open Calculator</span>
+            <span>Custom Calculator</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -288,29 +303,62 @@ const Dashboard: React.FC = () => {
           {quickTemplates.map((template) => (
             <motion.div
               key={template.code}
-              whileHover={{ y: -3, scale: 1.01 }}
+              whileHover={{ y: -4, scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
               onClick={template.action}
-              className="fresh-card p-4.5 cursor-pointer hover:border-emerald-500/40 dark:hover:border-emerald-500/60 group flex flex-col justify-between"
+              className="fresh-card overflow-hidden cursor-pointer hover:border-emerald-500/50 dark:hover:border-emerald-500/70 group flex flex-col justify-between transition-all shadow-sm hover:shadow-md"
             >
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-2xl">{template.icon}</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800/60">
-                    {template.yield}
-                  </span>
+                {/* Product Photo with Badges */}
+                <div className="relative h-36 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                  <img
+                    src={template.image}
+                    alt={template.title}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
+                  
+                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-600/90 text-white backdrop-blur-sm tracking-wide">
+                      {template.tag}
+                    </span>
+                  </div>
+
+                  <div className="absolute top-2.5 right-2.5">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-200 border border-cyan-400/30 backdrop-blur-sm flex items-center gap-1">
+                      <Snowflake className="h-2.5 w-2.5" />
+                      {template.temp}
+                    </span>
+                  </div>
+
+                  <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-white">
+                    <span className="text-xs font-mono font-bold tracking-tight text-emerald-300 drop-shadow">
+                      {template.code}
+                    </span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white/20 backdrop-blur-md text-white">
+                      {template.yield}
+                    </span>
+                  </div>
                 </div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                  {template.title}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed line-clamp-2">
-                  {template.desc}
-                </p>
+
+                <div className="p-4">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
+                    {template.title}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed line-clamp-2">
+                    {template.desc}
+                  </p>
+                </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                <span>Load & Calculate</span>
-                <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+              <div className="px-4 pb-3.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                <span className="flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Load into BOM Engine
+                </span>
+                <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1.5 transition-transform" />
               </div>
             </motion.div>
           ))}
@@ -441,80 +489,102 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
-          {boms.slice(0, 5).map((bom) => (
-            <div
-              key={bom.id}
-              className="p-4 sm:p-5 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 group"
-            >
-              <div className="space-y-1 max-w-xl">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-slate-400 dark:text-slate-500">{bom.projectCode || 'BOM'}</span>
-                  <span className="text-xs px-2 py-0.5 rounded-md font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800/60">
-                    v{bom.version}
-                  </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
-                    bom.status === 'active' 
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' 
-                      : bom.status === 'draft'
-                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                      : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                  }`}>
-                    {bom.status}
-                  </span>
-                  {bom.storageCondition && (
-                    <span className="text-[10px] text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/50 border border-cyan-100 dark:border-cyan-800/60 px-2 py-0.5 rounded-md font-semibold">
-                      {bom.storageCondition}
-                    </span>
-                  )}
-                </div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{bom.name}</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{bom.description || 'No description provided'}</p>
-              </div>
+          {boms.slice(0, 5).map((bom) => {
+            const itemImage = bom.imageUrl || getProductImage(bom);
+            return (
+              <div
+                key={bom.id}
+                className="p-4 sm:p-5 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 group"
+              >
+                <div className="flex items-start sm:items-center gap-3.5 max-w-xl">
+                  {/* Thumbnail Image */}
+                  <div className="relative w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
+                    <img
+                      src={itemImage}
+                      alt={bom.name}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                  </div>
 
-              <div className="flex items-center justify-between md:justify-end gap-6">
-                <div className="text-right">
-                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Batch Grand Total</p>
-                  <p className="text-base font-extrabold text-slate-900 dark:text-white font-display">
-                    {formatCurrency(bom.grandTotal, currency)}
-                  </p>
-                  {bom.costPerUnit && (
-                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold font-mono">
-                      {formatCurrency(bom.costPerUnit, currency)} / unit
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-800/60">
+                        {bom.projectCode || 'BOM'}
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        v{bom.version}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                        bom.status === 'active' 
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' 
+                          : bom.status === 'draft'
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                          : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                      }`}>
+                        {bom.status}
+                      </span>
+                      {bom.storageCondition && (
+                        <span className="text-[10px] text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/50 border border-cyan-100 dark:border-cyan-800/60 px-1.5 py-0.5 rounded-md font-semibold">
+                          {bom.storageCondition}
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
+                      {bom.name}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
+                      {bom.description || 'No description provided'}
                     </p>
-                  )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      setCurrentBOM(bom);
-                      navigate('/calculator');
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-bold transition-colors shadow-2xs"
-                  >
-                    Edit
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => duplicateBOM(bom.id)}
-                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    title="Duplicate BOM"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => exportToPDF(bom, { format: 'pdf', includeCosts: true, includeLabor: true, includeSummary: true })}
-                    className="p-1.5 rounded-xl text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors"
-                    title="Export PDF"
-                  >
-                    <Download className="h-4 w-4" />
-                  </motion.button>
+                <div className="flex items-center justify-between md:justify-end gap-6 pl-17 sm:pl-0">
+                  <div className="text-right">
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Batch Grand Total</p>
+                    <p className="text-base font-extrabold text-slate-900 dark:text-white font-display">
+                      {formatCurrency(bom.grandTotal, currency)}
+                    </p>
+                    {bom.costPerUnit && (
+                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                        {formatCurrency(bom.costPerUnit, currency)} / unit
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setCurrentBOM(bom);
+                        navigate('/calculator');
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-bold transition-colors shadow-2xs"
+                    >
+                      Edit
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => duplicateBOM(bom.id)}
+                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      title="Duplicate BOM"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => exportToPDF(bom, { format: 'pdf', includeCosts: true, includeLabor: true, includeSummary: true })}
+                      className="p-1.5 rounded-xl text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors"
+                      title="Export PDF"
+                    >
+                      <Download className="h-4 w-4" />
+                    </motion.button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </motion.div>
     </motion.div>

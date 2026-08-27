@@ -6,6 +6,7 @@ export interface Material {
   costPerUnit: number;
   supplier?: string;
   description?: string;
+  imageUrl?: string;
   inStock?: number;
   reorderLevel?: number;
   storageCondition?: 'Frozen (-18°C)' | 'Chilled (2-4°C)' | 'Ambient' | 'Special';
@@ -49,6 +50,7 @@ export interface BOM {
   description?: string;
   projectCode?: string;
   category?: string;
+  imageUrl?: string;
   batchQuantity?: number;
   batchUnit?: string;
   storageCondition?: string;
@@ -75,6 +77,7 @@ export interface BOMFormData {
   description?: string;
   projectCode?: string;
   category?: string;
+  imageUrl?: string;
   batchQuantity?: number;
   batchUnit?: string;
   storageCondition?: string;

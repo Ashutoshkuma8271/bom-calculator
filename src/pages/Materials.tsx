@@ -7,13 +7,15 @@ import {
   Trash2, 
   AlertTriangle, 
   Snowflake,
-  X
+  X,
+  Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence, type Variants } from 'motion/react';
 import { toast } from 'sonner';
 import useBOMStore from '../stores/bomStore';
 import { formatCurrency, generateId, getCategoryBadgeColor } from '../lib/utils';
 import { Material } from '../types';
+import { getMaterialImage } from '../lib/productImages';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -281,15 +283,25 @@ const Materials: React.FC = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredMaterials.map((material) => {
                 const isLow = (material.inStock || 0) <= (material.reorderLevel || 0);
+                const matImage = material.imageUrl || getMaterialImage(material);
 
                 return (
                   <tr key={material.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="py-3.5 px-4">
-                      <div>
-                        <p className="font-bold text-slate-900 dark:text-white text-sm font-display">{material.name}</p>
-                        {material.description && (
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{material.description}</p>
-                        )}
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={matImage}
+                          alt={material.name}
+                          referrerPolicy="no-referrer"
+                          className="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs"
+                          loading="lazy"
+                        />
+                        <div>
+                          <p className="font-bold text-slate-900 dark:text-white text-sm font-display">{material.name}</p>
+                          {material.description && (
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{material.description}</p>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
@@ -305,6 +317,7 @@ const Materials: React.FC = () => {
                           ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                       }`}>
+                        <Snowflake className="h-2.5 w-2.5 text-cyan-600 dark:text-cyan-400" />
                         {material.storageCondition || 'Ambient'}
                       </span>
                     </td>

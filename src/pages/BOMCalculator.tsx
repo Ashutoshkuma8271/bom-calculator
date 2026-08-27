@@ -15,6 +15,7 @@ import {
   Flame,
   Package,
   Sliders,
+  Snowflake,
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -24,6 +25,7 @@ import useBOMStore from '../stores/bomStore';
 import { formatCurrency, generateId } from '../lib/utils';
 import { exportToExcel, exportToPDF } from '../lib/export';
 import { BOM, BOMFormData } from '../types';
+import { getProductImage } from '../lib/productImages';
 
 const bomSchema = z.object({
   name: z.string().min(1, 'BOM name is required'),
@@ -920,15 +922,41 @@ const BOMCalculator: React.FC = () => {
         {/* Right Sticky Sidebar: Live Economics & Pricing Summary */}
         <div className="space-y-5">
           <div className="fresh-card p-5 sticky top-20 space-y-5">
-            {/* Header Badge */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center space-x-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Live Economics</span>
+            {/* Header Product Preview with Real Photo */}
+            <div className="relative h-32 w-full rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+              <img
+                src={getProductImage({ name: watchedValues.name, category: watchedValues.category })}
+                alt={watchedValues.name || 'Recipe Preview'}
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
+              
+              <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[10px] font-mono font-bold text-white bg-slate-950/80 backdrop-blur-sm px-2 py-0.5 rounded border border-white/20">
+                  {watchedValues.projectCode || 'AF-BOM'}
+                </span>
               </div>
-              <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 rounded-full">
-                Batch: {watchedValues.batchQuantity || 1} {watchedValues.batchUnit || 'units'}
-              </span>
+
+              {watchedValues.storageCondition && (
+                <div className="absolute top-2.5 right-2.5">
+                  <span className="text-[10px] font-semibold text-cyan-200 bg-slate-950/80 backdrop-blur-sm px-2 py-0.5 rounded-full border border-cyan-400/30 flex items-center gap-1">
+                    <Snowflake className="h-2.5 w-2.5 text-cyan-300" />
+                    {watchedValues.storageCondition}
+                  </span>
+                </div>
+              )}
+
+              <div className="absolute bottom-2.5 left-3 right-3 text-white">
+                <p className="text-xs font-bold font-display truncate drop-shadow">
+                  {watchedValues.name || 'Untitled Recipe'}
+                </p>
+                <div className="flex items-center justify-between text-[10px] text-slate-300">
+                  <span>{watchedValues.category || 'Food & Ready-to-Cook'}</span>
+                  <span className="font-bold text-emerald-300">Batch: {watchedValues.batchQuantity || 1} {watchedValues.batchUnit || 'units'}</span>
+                </div>
+              </div>
             </div>
 
             {/* Grand Total Hero */}
@@ -1047,28 +1075,47 @@ const BOMCalculator: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
-                {boms.map((preset) => (
-                  <motion.div
-                    key={preset.id}
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleLoadTemplate(preset)}
-                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 cursor-pointer transition-all space-y-2 group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-bold text-slate-400 dark:text-slate-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">{preset.projectCode || 'AF-BOM'}</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                        {preset.batchQuantity} {preset.batchUnit}
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-display">{preset.name}</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{preset.description}</p>
-                    <div className="pt-2 flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-bold border-t border-slate-200/50 dark:border-slate-800">
-                      <span className="font-mono">{formatCurrency(preset.grandTotal, currency)}</span>
-                      <span>Use Template →</span>
-                    </div>
-                  </motion.div>
-                ))}
+                {boms.map((preset) => {
+                  const presetImg = preset.imageUrl || getProductImage(preset);
+                  return (
+                    <motion.div
+                      key={preset.id}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleLoadTemplate(preset)}
+                      className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 cursor-pointer transition-all space-y-2.5 group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={presetImg}
+                          alt={preset.name}
+                          referrerPolicy="no-referrer"
+                          className="w-12 h-12 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                              {preset.projectCode || 'AF-BOM'}
+                            </span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                              {preset.batchQuantity} {preset.batchUnit}
+                            </span>
+                          </div>
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-display truncate">
+                            {preset.name}
+                          </h4>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                        {preset.description}
+                      </p>
+                      <div className="pt-2 flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-bold border-t border-slate-200/50 dark:border-slate-800">
+                        <span className="font-mono">{formatCurrency(preset.grandTotal, currency)}</span>
+                        <span>Use Template →</span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </motion.div>
           </div>
