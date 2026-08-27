@@ -24,8 +24,12 @@ import {
   ArrowRight,
   Info,
   Sliders,
-  ChevronDown
+  ChevronDown,
+  X,
+  Check
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 import useBOMStore from '../stores/bomStore';
 import { formatCurrency, generateId } from '../lib/utils';
@@ -63,6 +67,15 @@ const bomSchema = z.object({
     })
   ),
 });
+
+const triggerConfetti = () => {
+  confetti({
+    particleCount: 50,
+    spread: 60,
+    origin: { y: 0.8 },
+    colors: ['#059669', '#10b981', '#34d399', '#0284c7']
+  });
+};
 
 const BOMCalculator: React.FC = () => {
   const { 
@@ -120,7 +133,7 @@ const BOMCalculator: React.FC = () => {
     watch,
     setValue,
     reset,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<BOMFormData>({
     resolver: zodResolver(bomSchema) as any,
     defaultValues,
@@ -216,7 +229,8 @@ const BOMCalculator: React.FC = () => {
       })),
     });
     setTemplateModalOpen(false);
-    toast.success(`Loaded template: ${preset.name}`);
+    triggerConfetti();
+    toast.success(`Loaded recipe: ${preset.name}`);
   };
 
   const onSubmit = (data: BOMFormData) => {
@@ -254,6 +268,7 @@ const BOMCalculator: React.FC = () => {
       setCurrentBOM(bom);
       toast.success('New BOM created successfully');
     }
+    triggerConfetti();
   };
 
   const handleExportExcel = () => {
@@ -336,12 +351,17 @@ const BOMCalculator: React.FC = () => {
   const profitCostRatio = calculatedTotals.grandTotal ? ((calculatedTotals.totalProfit || 0) / calculatedTotals.grandTotal) * 100 : 0;
 
   return (
-    <div className="space-y-6 pb-16 animate-fade-in">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6 pb-16"
+    >
       {/* Top Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
+            <div className="p-2 rounded-2xl bg-emerald-700 text-white shadow-sm">
               <Calculator className="h-5 w-5" />
             </div>
             <div>
@@ -350,7 +370,7 @@ const BOMCalculator: React.FC = () => {
                   {currentBOM ? `Edit BOM: ${currentBOM.name}` : 'BOM Recipe & Cost Calculator'}
                 </h1>
                 {currentBOM && (
-                  <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">
+                  <span className="text-xs px-2 py-0.5 rounded-md font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                     v{currentBOM.version}
                   </span>
                 )}
@@ -361,54 +381,64 @@ const BOMCalculator: React.FC = () => {
         </div>
 
         <div className="flex items-center flex-wrap gap-2">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={() => setTemplateModalOpen(true)}
-            className="inline-flex items-center px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors"
+            className="inline-flex items-center px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all"
           >
             <Sparkles className="h-4 w-4 mr-1.5 text-emerald-600" />
             <span>Load Preset Recipe</span>
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={() => {
               setCurrentBOM(null);
               reset(defaultValues);
               toast.info('Calculator reset to blank state');
             }}
-            className="inline-flex items-center px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-colors"
+            className="inline-flex items-center px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-all"
             title="Reset Form"
           >
             <RotateCcw className="h-4 w-4" />
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={handleExportExcel}
-            className="inline-flex items-center px-3.5 py-2 rounded-xl border border-emerald-200 hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition-colors"
+            className="inline-flex items-center px-3.5 py-2 rounded-xl border border-emerald-200 hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition-all"
           >
             <FileSpreadsheet className="h-4 w-4 mr-1.5 text-emerald-600" />
             <span>Excel</span>
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={handleExportPDF}
-            className="inline-flex items-center px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-bold transition-colors"
+            className="inline-flex items-center px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-bold transition-all"
           >
             <Download className="h-4 w-4 mr-1.5 text-slate-600" />
             <span>PDF</span>
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             type="button"
             onClick={handleSubmit(onSubmit)}
-            className="inline-flex items-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-extrabold shadow-sm transition-colors"
+            className="inline-flex items-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-extrabold shadow-sm transition-all"
           >
             <Save className="h-4 w-4 mr-1.5" />
             <span>Save BOM</span>
-          </button>
+          </motion.button>
         </div>
       </div>
 
@@ -420,7 +450,7 @@ const BOMCalculator: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center space-x-2">
                 <Flame className="h-4 w-4 text-emerald-600" />
-                <h2 className="text-sm font-bold text-slate-900">Batch & Product Specification</h2>
+                <h2 className="text-sm font-bold text-slate-900 font-display">Batch & Product Specification</h2>
               </div>
               <span className="text-[11px] font-semibold text-slate-400">Step 1 of 3</span>
             </div>
@@ -472,7 +502,7 @@ const BOMCalculator: React.FC = () => {
                     {...register('batchQuantity', { valueAsNumber: true })}
                     type="number"
                     min="1"
-                    className="w-2/3 px-3.5 py-2 text-sm text-slate-900 font-bold"
+                    className="w-2/3 px-3.5 py-2 text-sm text-slate-900 font-bold font-mono"
                   />
                   <input
                     {...register('batchUnit')}
@@ -531,7 +561,7 @@ const BOMCalculator: React.FC = () => {
               }`}
             >
               <Clock className="h-4 w-4" />
-              <span>2. Labor & Processing Operations ({laborFields.length})</span>
+              <span>2. Labor & Operations ({laborFields.length})</span>
             </button>
             <button
               type="button"
@@ -549,13 +579,19 @@ const BOMCalculator: React.FC = () => {
 
           {/* Tab 1: Ingredients & Raw Materials */}
           {activeTab === 'materials' && (
-            <div className="fresh-card p-5 space-y-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="fresh-card p-5 space-y-4"
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Raw Ingredients & Packaging Components</h3>
+                  <h3 className="text-sm font-bold text-slate-900 font-display">Raw Ingredients & Packaging Components</h3>
                   <p className="text-xs text-slate-500">Pick from inventory or input custom items with scrap/waste % allowance.</p>
                 </div>
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   type="button"
                   onClick={() =>
                     appendItem({
@@ -568,138 +604,152 @@ const BOMCalculator: React.FC = () => {
                       category: materials[0]?.category || 'Proteins & Meats',
                     })
                   }
-                  className="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors border border-emerald-200/80"
+                  className="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all border border-emerald-200/80"
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" />
                   <span>Add Line Item</span>
-                </button>
+                </motion.button>
               </div>
 
               <div className="space-y-3">
-                {itemFields.map((field, index) => {
-                  const item = watchedValues.items?.[index];
-                  const rowCost = (item?.quantity || 0) * (item?.costPerUnit || 0) * (1 + (item?.wastePercentage || 0) / 100);
+                <AnimatePresence initial={false}>
+                  {itemFields.map((field, index) => {
+                    const item = watchedValues.items?.[index];
+                    const rowCost = (item?.quantity || 0) * (item?.costPerUnit || 0) * (1 + (item?.wastePercentage || 0) / 100);
 
-                  return (
-                    <div
-                      key={field.id}
-                      className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:border-emerald-300 transition-all space-y-3"
-                    >
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                        {/* Material Selector / Name */}
-                        <div className="sm:col-span-5">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
-                            Ingredient / Material
-                          </label>
-                          <select
-                            value={item?.materialId || ''}
-                            onChange={(e) => handleMaterialSelect(index, e.target.value)}
-                            className="w-full px-2.5 py-1.5 text-xs text-slate-900 font-semibold"
-                          >
-                            <option value="">-- Choose from Inventory --</option>
-                            {materials.map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.name} ({m.category} • {formatCurrency(m.costPerUnit, currency)}/{m.unit})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                    return (
+                      <motion.div
+                        key={field.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.95, y: -8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, height: 0, marginBottom: 0, overflow: 'hidden' }}
+                        transition={{ duration: 0.2 }}
+                        className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:border-emerald-300 transition-all space-y-3"
+                      >
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                          {/* Material Selector / Name */}
+                          <div className="sm:col-span-5">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                              Ingredient / Material
+                            </label>
+                            <select
+                              value={item?.materialId || ''}
+                              onChange={(e) => handleMaterialSelect(index, e.target.value)}
+                              className="w-full px-2.5 py-1.5 text-xs text-slate-900 font-semibold"
+                            >
+                              <option value="">-- Choose from Inventory --</option>
+                              {materials.map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name} ({m.category} • {formatCurrency(m.costPerUnit, currency)}/{m.unit})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
 
-                        {/* Quantity */}
-                        <div className="sm:col-span-2">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
-                            Batch Qty
-                          </label>
-                          <div className="flex items-center space-x-1">
+                          {/* Quantity */}
+                          <div className="sm:col-span-2">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                              Batch Qty
+                            </label>
+                            <div className="flex items-center space-x-1">
+                              <input
+                                {...register(`items.${index}.quantity`, { valueAsNumber: true })}
+                                type="number"
+                                step="0.01"
+                                min="0.001"
+                                className="w-full px-2 py-1.5 text-xs text-slate-900 font-bold"
+                              />
+                              <span className="text-[10px] font-bold text-slate-500 w-8">{item?.unit}</span>
+                            </div>
+                          </div>
+
+                          {/* Unit Cost */}
+                          <div className="sm:col-span-2">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                              Rate / Unit
+                            </label>
                             <input
-                              {...register(`items.${index}.quantity`, { valueAsNumber: true })}
+                              {...register(`items.${index}.costPerUnit`, { valueAsNumber: true })}
                               type="number"
                               step="0.01"
-                              min="0.001"
-                              className="w-full px-2 py-1.5 text-xs text-slate-900 font-bold"
+                              min="0"
+                              className="w-full px-2 py-1.5 text-xs text-slate-900 font-medium font-mono"
                             />
-                            <span className="text-[10px] font-bold text-slate-500 w-8">{item?.unit}</span>
+                          </div>
+
+                          {/* Waste % */}
+                          <div className="sm:col-span-2">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                              Scrap / Waste %
+                            </label>
+                            <input
+                              {...register(`items.${index}.wastePercentage`, { valueAsNumber: true })}
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="100"
+                              placeholder="0%"
+                              className="w-full px-2 py-1.5 text-xs text-slate-700 font-mono"
+                            />
+                          </div>
+
+                          {/* Actions & Row Total */}
+                          <div className="sm:col-span-1 flex items-center justify-end">
+                            <motion.button
+                              whileTap={{ scale: 0.85 }}
+                              type="button"
+                              onClick={() => removeItem(index)}
+                              disabled={itemFields.length <= 1}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-30"
+                              title="Remove Line"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </motion.button>
                           </div>
                         </div>
 
-                        {/* Unit Cost */}
-                        <div className="sm:col-span-2">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
-                            Rate / Unit
-                          </label>
-                          <input
-                            {...register(`items.${index}.costPerUnit`, { valueAsNumber: true })}
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            className="w-full px-2 py-1.5 text-xs text-slate-900 font-medium"
-                          />
+                        <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/50">
+                          <span className="text-[11px] text-slate-500 font-medium">
+                            {item?.category && (
+                              <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600 font-semibold mr-2">
+                                {item.category}
+                              </span>
+                            )}
+                            Line Total (with {item?.wastePercentage || 0}% allowance):
+                          </span>
+                          <span className="font-bold text-slate-900 font-mono">
+                            {formatCurrency(rowCost, currency)}
+                          </span>
                         </div>
-
-                        {/* Waste % */}
-                        <div className="sm:col-span-2">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
-                            Scrap / Waste %
-                          </label>
-                          <input
-                            {...register(`items.${index}.wastePercentage`, { valueAsNumber: true })}
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            max="100"
-                            placeholder="0%"
-                            className="w-full px-2 py-1.5 text-xs text-slate-700"
-                          />
-                        </div>
-
-                        {/* Actions & Row Total */}
-                        <div className="sm:col-span-1 flex items-center justify-end">
-                          <button
-                            type="button"
-                            onClick={() => removeItem(index)}
-                            disabled={itemFields.length <= 1}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-30"
-                            title="Remove Line"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/50">
-                        <span className="text-[11px] text-slate-500 font-medium">
-                          {item?.category && (
-                            <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600 font-semibold mr-2">
-                              {item.category}
-                            </span>
-                          )}
-                          Line Total (with {item?.wastePercentage || 0}% allowance):
-                        </span>
-                        <span className="font-bold text-slate-900 font-mono">
-                          {formatCurrency(rowCost, currency)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
 
               <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center justify-between text-xs font-bold text-emerald-900">
                 <span>Total Raw Materials & Ingredients Cost</span>
-                <span className="text-sm font-extrabold">{formatCurrency(calculatedTotals.totalMaterialCost || 0, currency)}</span>
+                <span className="text-sm font-extrabold font-mono">{formatCurrency(calculatedTotals.totalMaterialCost || 0, currency)}</span>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Tab 2: Labor & Processing */}
           {activeTab === 'labor' && (
-            <div className="fresh-card p-5 space-y-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="fresh-card p-5 space-y-4"
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Labor & Machine Operations</h3>
+                  <h3 className="text-sm font-bold text-slate-900 font-display">Labor & Machine Operations</h3>
                   <p className="text-xs text-slate-500">Mincing, dumpling folding, blast freezing, nitrogen flush, quality inspections.</p>
                 </div>
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   type="button"
                   onClick={() =>
                     appendLabor({
@@ -710,105 +760,117 @@ const BOMCalculator: React.FC = () => {
                       operationType: 'General Processing',
                     })
                   }
-                  className="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors border border-emerald-200/80"
+                  className="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all border border-emerald-200/80"
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" />
                   <span>Add Operation</span>
-                </button>
+                </motion.button>
               </div>
 
               <div className="space-y-3">
-                {laborFields.map((field, index) => {
-                  const labor = watchedValues.laborItems?.[index];
-                  const rowLaborCost = (labor?.hours || 0) * (labor?.hourlyRate || 0);
+                <AnimatePresence initial={false}>
+                  {laborFields.map((field, index) => {
+                    const labor = watchedValues.laborItems?.[index];
+                    const rowLaborCost = (labor?.hours || 0) * (labor?.hourlyRate || 0);
 
-                  return (
-                    <div
-                      key={field.id}
-                      className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:border-emerald-300 transition-all space-y-3"
-                    >
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                        <div className="sm:col-span-6">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
-                            Operation / Role
-                          </label>
-                          <select
-                            value={labor?.laborId || ''}
-                            onChange={(e) => handleLaborSelect(index, e.target.value)}
-                            className="w-full px-2.5 py-1.5 text-xs text-slate-900 font-semibold"
-                          >
-                            <option value="">-- Choose Processing Operation --</option>
-                            {laborCosts.map((l) => (
-                              <option key={l.id} value={l.id}>
-                                {l.name} ({l.category} • {formatCurrency(l.hourlyRate, currency)}/hr)
-                              </option>
-                            ))}
-                          </select>
+                    return (
+                      <motion.div
+                        key={field.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.95, y: -8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, height: 0, marginBottom: 0, overflow: 'hidden' }}
+                        transition={{ duration: 0.2 }}
+                        className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:border-emerald-300 transition-all space-y-3"
+                      >
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                          <div className="sm:col-span-6">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                              Operation / Role
+                            </label>
+                            <select
+                              value={labor?.laborId || ''}
+                              onChange={(e) => handleLaborSelect(index, e.target.value)}
+                              className="w-full px-2.5 py-1.5 text-xs text-slate-900 font-semibold"
+                            >
+                              <option value="">-- Choose Processing Operation --</option>
+                              {laborCosts.map((l) => (
+                                <option key={l.id} value={l.id}>
+                                  {l.name} ({l.category} • {formatCurrency(l.hourlyRate, currency)}/hr)
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                              Total Hours
+                            </label>
+                            <input
+                              {...register(`laborItems.${index}.hours`, { valueAsNumber: true })}
+                              type="number"
+                              step="0.25"
+                              min="0.1"
+                              className="w-full px-2 py-1.5 text-xs text-slate-900 font-bold font-mono"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-3">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                              Hourly Rate ({currency})
+                            </label>
+                            <input
+                              {...register(`laborItems.${index}.hourlyRate`, { valueAsNumber: true })}
+                              type="number"
+                              step="10"
+                              min="0"
+                              className="w-full px-2 py-1.5 text-xs text-slate-900 font-medium font-mono"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-1 flex items-center justify-end">
+                            <motion.button
+                              whileTap={{ scale: 0.85 }}
+                              type="button"
+                              onClick={() => removeLabor(index)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                              title="Remove Operation"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </motion.button>
+                          </div>
                         </div>
 
-                        <div className="sm:col-span-2">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
-                            Total Hours
-                          </label>
-                          <input
-                            {...register(`laborItems.${index}.hours`, { valueAsNumber: true })}
-                            type="number"
-                            step="0.25"
-                            min="0.1"
-                            className="w-full px-2 py-1.5 text-xs text-slate-900 font-bold"
-                          />
+                        <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/50">
+                          <span className="text-[11px] text-slate-500 font-medium">
+                            {labor?.hours || 0} hrs @ {formatCurrency(labor?.hourlyRate || 0, currency)}/hr
+                          </span>
+                          <span className="font-bold text-slate-900 font-mono">
+                            {formatCurrency(rowLaborCost, currency)}
+                          </span>
                         </div>
-
-                        <div className="sm:col-span-3">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
-                            Hourly Rate ({currency})
-                          </label>
-                          <input
-                            {...register(`laborItems.${index}.hourlyRate`, { valueAsNumber: true })}
-                            type="number"
-                            step="10"
-                            min="0"
-                            className="w-full px-2 py-1.5 text-xs text-slate-900 font-medium"
-                          />
-                        </div>
-
-                        <div className="sm:col-span-1 flex items-center justify-end">
-                          <button
-                            type="button"
-                            onClick={() => removeLabor(index)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                            title="Remove Operation"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/50">
-                        <span className="text-[11px] text-slate-500 font-medium">
-                          {labor?.hours || 0} hrs @ {formatCurrency(labor?.hourlyRate || 0, currency)}/hr
-                        </span>
-                        <span className="font-bold text-slate-900 font-mono">
-                          {formatCurrency(rowLaborCost, currency)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
 
               <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-center justify-between text-xs font-bold text-blue-900">
                 <span>Total Labor & Processing Cost</span>
-                <span className="text-sm font-extrabold">{formatCurrency(calculatedTotals.totalLaborCost || 0, currency)}</span>
+                <span className="text-sm font-extrabold font-mono">{formatCurrency(calculatedTotals.totalLaborCost || 0, currency)}</span>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Tab 3: Overheads & Margins */}
           {activeTab === 'overheads' && (
-            <div className="fresh-card p-5 space-y-5">
+            <motion.div 
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="fresh-card p-5 space-y-5"
+            >
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Overhead, Cold-Chain Utilities & Profit Markup</h3>
+                <h3 className="text-sm font-bold text-slate-900 font-display">Overhead, Cold-Chain Utilities & Profit Markup</h3>
                 <p className="text-xs text-slate-500">Fine-tune power (blast freezer refrigeration), QA compliance, and target gross margin.</p>
               </div>
 
@@ -863,7 +925,7 @@ const BOMCalculator: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
 
@@ -889,7 +951,7 @@ const BOMCalculator: React.FC = () => {
               </p>
               <div className="pt-2 border-t border-emerald-900/60 flex items-center justify-between text-xs text-emerald-200/90">
                 <span>Cost Per {watchedValues.batchUnit || 'Unit'}:</span>
-                <span className="font-bold text-white text-sm">
+                <span className="font-bold text-white text-sm font-mono">
                   {formatCurrency(unitCost, currency)}
                 </span>
               </div>
@@ -902,10 +964,10 @@ const BOMCalculator: React.FC = () => {
                 <span>100%</span>
               </div>
               <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
-                <div style={{ width: `${rawCostRatio}%` }} className="bg-emerald-600" title={`Materials: ${rawCostRatio.toFixed(1)}%`} />
-                <div style={{ width: `${laborCostRatio}%` }} className="bg-sky-500" title={`Labor: ${laborCostRatio.toFixed(1)}%`} />
-                <div style={{ width: `${overheadCostRatio}%` }} className="bg-amber-500" title={`Overheads: ${overheadCostRatio.toFixed(1)}%`} />
-                <div style={{ width: `${profitCostRatio}%` }} className="bg-emerald-400" title={`Profit: ${profitCostRatio.toFixed(1)}%`} />
+                <div style={{ width: `${rawCostRatio}%` }} className="bg-emerald-600 transition-all duration-300" title={`Materials: ${rawCostRatio.toFixed(1)}%`} />
+                <div style={{ width: `${laborCostRatio}%` }} className="bg-sky-500 transition-all duration-300" title={`Labor: ${laborCostRatio.toFixed(1)}%`} />
+                <div style={{ width: `${overheadCostRatio}%` }} className="bg-amber-500 transition-all duration-300" title={`Overheads: ${overheadCostRatio.toFixed(1)}%`} />
+                <div style={{ width: `${profitCostRatio}%` }} className="bg-emerald-400 transition-all duration-300" title={`Profit: ${profitCostRatio.toFixed(1)}%`} />
               </div>
               <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 pt-1">
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-600" /> Ingredients ({rawCostRatio.toFixed(0)}%)</span>
@@ -919,19 +981,19 @@ const BOMCalculator: React.FC = () => {
             <div className="space-y-2.5 pt-2 border-t border-slate-100 text-xs">
               <div className="flex justify-between text-slate-600">
                 <span>Raw Materials & Packaging</span>
-                <span className="font-bold text-slate-900">{formatCurrency(calculatedTotals.totalMaterialCost || 0, currency)}</span>
+                <span className="font-bold text-slate-900 font-mono">{formatCurrency(calculatedTotals.totalMaterialCost || 0, currency)}</span>
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>Labor & Processing</span>
-                <span className="font-bold text-slate-900">{formatCurrency(calculatedTotals.totalLaborCost || 0, currency)}</span>
+                <span className="font-bold text-slate-900 font-mono">{formatCurrency(calculatedTotals.totalLaborCost || 0, currency)}</span>
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>Overhead ({watchedValues.overheadPercentage}%)</span>
-                <span className="font-bold text-slate-900">{formatCurrency(calculatedTotals.totalOverhead || 0, currency)}</span>
+                <span className="font-bold text-slate-900 font-mono">{formatCurrency(calculatedTotals.totalOverhead || 0, currency)}</span>
               </div>
               <div className="flex justify-between text-emerald-700 font-semibold pt-1 border-t border-dashed border-slate-200">
                 <span>Net Profit Markup ({watchedValues.profitMargin}%)</span>
-                <span className="font-extrabold">{formatCurrency(calculatedTotals.totalProfit || 0, currency)}</span>
+                <span className="font-extrabold font-mono">{formatCurrency(calculatedTotals.totalProfit || 0, currency)}</span>
               </div>
             </div>
 
@@ -945,69 +1007,88 @@ const BOMCalculator: React.FC = () => {
               </div>
               <div className="flex items-center justify-between text-slate-600 text-xs">
                 <span>Suggested Retail MRP (1.35x)</span>
-                <span className="font-bold text-slate-900">
+                <span className="font-bold text-slate-900 font-mono">
                   {formatCurrency(unitCost * 1.35, currency)}
                 </span>
               </div>
             </div>
 
             {/* Save Button */}
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="submit"
-              className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm shadow-md shadow-emerald-600/20 transition-all hover:scale-[1.01]"
+              className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm shadow-md shadow-emerald-600/20 transition-all"
             >
               <Save className="h-4 w-4" />
               <span>{currentBOM ? 'Update BOM & Save' : 'Save as Active BOM'}</span>
-            </button>
+            </motion.button>
           </div>
         </div>
       </form>
 
       {/* Preset Recipe Modal */}
-      {templateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setTemplateModalOpen(false)} />
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 z-10 animate-slide-up space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">Load Akira Fresh Recipe Preset</h3>
-                <p className="text-xs text-slate-500">Select a pre-configured BOM to quickly calculate custom batch yields.</p>
-              </div>
-              <button
-                onClick={() => setTemplateModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
-              {boms.map((preset) => (
-                <div
-                  key={preset.id}
-                  onClick={() => handleLoadTemplate(preset)}
-                  className="p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50 border border-slate-200/80 hover:border-emerald-300 cursor-pointer transition-all space-y-2 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold text-slate-400 group-hover:text-emerald-700">{preset.projectCode || 'AF-BOM'}</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                      {preset.batchQuantity} {preset.batchUnit}
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-900">{preset.name}</h4>
-                  <p className="text-xs text-slate-500 line-clamp-2">{preset.description}</p>
-                  <div className="pt-2 flex items-center justify-between text-xs text-emerald-700 font-bold border-t border-slate-200/50">
-                    <span>{formatCurrency(preset.grandTotal, currency)}</span>
-                    <span>Use Template →</span>
-                  </div>
+      <AnimatePresence>
+        {templateModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" 
+              onClick={() => setTemplateModalOpen(false)} 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 z-10 space-y-4"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 font-display">Load Akira Fresh Recipe Preset</h3>
+                  <p className="text-xs text-slate-500">Select a pre-configured BOM to quickly calculate custom batch yields.</p>
                 </div>
-              ))}
-            </div>
+                <button
+                  onClick={() => setTemplateModalOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
+                {boms.map((preset) => (
+                  <motion.div
+                    key={preset.id}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleLoadTemplate(preset)}
+                    className="p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50 border border-slate-200/80 hover:border-emerald-300 cursor-pointer transition-all space-y-2 group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold text-slate-400 group-hover:text-emerald-700">{preset.projectCode || 'AF-BOM'}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                        {preset.batchQuantity} {preset.batchUnit}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-900 font-display">{preset.name}</h4>
+                    <p className="text-xs text-slate-500 line-clamp-2">{preset.description}</p>
+                    <div className="pt-2 flex items-center justify-between text-xs text-emerald-700 font-bold border-t border-slate-200/50">
+                      <span className="font-mono">{formatCurrency(preset.grandTotal, currency)}</span>
+                      <span>Use Template →</span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 
 export default BOMCalculator;
+

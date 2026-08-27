@@ -20,8 +20,10 @@ import {
   Copy,
   ExternalLink,
   ArrowUpRight,
-  Box
+  Box,
+  CheckCircle2
 } from 'lucide-react';
+import { motion, type Variants } from 'motion/react';
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -37,6 +39,21 @@ import useBOMStore from '../stores/bomStore';
 import { formatCurrency } from '../lib/utils';
 import { exportToPDF, exportToExcel } from '../lib/export';
 import { BOM } from '../types';
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.07,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', damping: 22, stiffness: 320 } },
+};
 
 const Dashboard: React.FC = () => {
   const { boms, materials, setCurrentBOM, duplicateBOM, currency } = useBOMStore();
@@ -102,7 +119,7 @@ const Dashboard: React.FC = () => {
   ];
 
   // Batch trends
-  const batchTrendData = boms.map((b, i) => ({
+  const batchTrendData = boms.map((b) => ({
     name: b.name.length > 20 ? b.name.substring(0, 18) + '...' : b.name,
     total: b.grandTotal,
     materials: b.totalMaterialCost,
@@ -176,92 +193,112 @@ const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 pb-12 animate-fade-in">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="space-y-7 pb-12"
+    >
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-slate-900 text-white p-6 sm:p-8 shadow-premium-lg">
-        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+      <motion.div 
+        variants={itemVariants}
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-950 via-emerald-900 to-slate-950 text-white p-6 sm:p-8 shadow-xl border border-emerald-800/40"
+      >
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-72 h-72 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-700/60 border border-emerald-500/40 text-emerald-200 text-xs font-semibold">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-700/50 border border-emerald-500/40 text-emerald-200 text-xs font-semibold">
               <Flame className="h-3.5 w-3.5 text-emerald-300" />
               <span>Akira Fresh Food Manufacturing & Cost Intelligence</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-display text-white">
               BOM Costing & Yield Dashboard
             </h1>
-            <p className="text-sm text-emerald-100/80 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-emerald-100/85 max-w-2xl leading-relaxed">
               Calculate exact ingredient costs, labor, blast-freezing overheads, cold-chain packaging, and profit margins for ready-to-cook gourmet products.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <Link
-              to="/boms"
-              className="inline-flex items-center px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors border border-white/20"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              <span>Browse All BOMs</span>
-            </Link>
-            <Link
-              to="/calculator"
-              onClick={() => setCurrentBOM(null)}
-              className="inline-flex items-center px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-lg shadow-emerald-500/30 transition-all hover:scale-[1.02]"
-            >
-              <Plus className="h-4 w-4 mr-1.5 stroke-[2.5]" />
-              <span>New Recipe BOM</span>
-            </Link>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Link
+                to="/boms"
+                className="inline-flex items-center px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                <span>Browse All BOMs</span>
+              </Link>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <Link
+                to="/calculator"
+                onClick={() => setCurrentBOM(null)}
+                className="inline-flex items-center px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-lg shadow-emerald-500/30 transition-all"
+              >
+                <Plus className="h-4 w-4 mr-1.5 stroke-[2.5]" />
+                <span>New Recipe BOM</span>
+              </Link>
+            </motion.div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {stats.map((stat) => (
-          <Link
+          <motion.div
             key={stat.name}
-            to={stat.link}
-            className="fresh-card p-5 group flex flex-col justify-between"
+            variants={itemVariants}
+            whileHover={{ y: -3, transition: { duration: 0.2 } }}
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{stat.name}</p>
-                <p className="text-2xl font-extrabold text-slate-900 mt-1 tracking-tight font-display">
-                  {stat.value}
-                </p>
+            <Link
+              to={stat.link}
+              className="fresh-card p-5 group flex flex-col justify-between h-full block"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{stat.name}</p>
+                  <p className="text-2xl font-extrabold text-slate-900 mt-1 tracking-tight font-display">
+                    {stat.value}
+                  </p>
+                </div>
+                <div className={`p-2.5 rounded-2xl shadow-xs ${stat.iconBg} group-hover:scale-105 transition-transform`}>
+                  <stat.icon className="h-5 w-5" />
+                </div>
               </div>
-              <div className={`p-2.5 rounded-xl shadow-xs ${stat.iconBg} group-hover:scale-110 transition-transform`}>
-                <stat.icon className="h-5 w-5" />
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-slate-500">{stat.subtext}</span>
+                <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-500">{stat.subtext}</span>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </Link>
+            </Link>
+          </motion.div>
         ))}
       </div>
 
       {/* Quick Launch Akira Fresh Recipe Presets */}
-      <div className="space-y-3">
+      <motion.div variants={itemVariants} className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 font-display">
               <Sparkles className="h-4 w-4 text-emerald-600" />
               <span>Akira Fresh Recipe & Batch Presets</span>
             </h2>
             <p className="text-xs text-slate-500">1-Click clone recipes with pre-configured ingredient yields and blast-freezing operations.</p>
           </div>
-          <Link to="/calculator" className="text-xs font-semibold text-emerald-700 hover:text-emerald-800">
-            Open Calculator →
+          <Link to="/calculator" className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1">
+            <span>Open Calculator</span>
+            <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickTemplates.map((template) => (
-            <div
+            <motion.div
               key={template.code}
+              whileHover={{ y: -3, scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
               onClick={template.action}
-              className="fresh-card p-4 cursor-pointer hover:border-emerald-500/40 group flex flex-col justify-between"
+              className="fresh-card p-4.5 cursor-pointer hover:border-emerald-500/40 group flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -282,18 +319,18 @@ const Dashboard: React.FC = () => {
                 <span>Load & Calculate</span>
                 <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Visual Analytics & Cost Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Cost Structure Pie */}
-        <div className="fresh-card p-5 lg:col-span-1 flex flex-col justify-between">
+        <motion.div variants={itemVariants} className="fresh-card p-5 lg:col-span-1 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-sm font-bold text-slate-900">Total Spend Distribution</h3>
+              <h3 className="text-sm font-bold text-slate-900 font-display">Total Spend Distribution</h3>
               <span className="text-xs font-semibold text-slate-400">All Active BOMs</span>
             </div>
             <p className="text-xs text-slate-500 mb-4">Breakdown between ingredients, labor, logistics, & margins.</p>
@@ -316,7 +353,7 @@ const Dashboard: React.FC = () => {
                   </Pie>
                   <Tooltip 
                     formatter={(val: any) => [formatCurrency(Number(val), currency), 'Amount']}
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: 'bold' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -330,19 +367,19 @@ const Dashboard: React.FC = () => {
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                   <span className="text-slate-600 font-medium">{item.name}</span>
                 </div>
-                <span className="font-bold text-slate-900">{formatCurrency(item.value, currency)}</span>
+                <span className="font-bold text-slate-900 font-mono">{formatCurrency(item.value, currency)}</span>
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Batch Cost Comparison Chart */}
-        <div className="fresh-card p-5 lg:col-span-2 flex flex-col justify-between">
+        <motion.div variants={itemVariants} className="fresh-card p-5 lg:col-span-2 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-sm font-bold text-slate-900">Production Batch Value Comparison</h3>
-              <Link to="/reports" className="text-xs font-semibold text-emerald-700 hover:underline">
-                View Full Reports
+              <h3 className="text-sm font-bold text-slate-900 font-display">Production Batch Value Comparison</h3>
+              <Link to="/reports" className="text-xs font-bold text-emerald-700 hover:underline">
+                View Full Reports →
               </Link>
             </div>
             <p className="text-xs text-slate-500 mb-4">Total manufacturing value per BOM configuration.</p>
@@ -352,7 +389,7 @@ const Dashboard: React.FC = () => {
                 <AreaChart data={batchTrendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="totalColor" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#059669" stopOpacity={0.4}/>
+                      <stop offset="5%" stopColor="#059669" stopOpacity={0.35}/>
                       <stop offset="95%" stopColor="#059669" stopOpacity={0.0}/>
                     </linearGradient>
                   </defs>
@@ -360,7 +397,7 @@ const Dashboard: React.FC = () => {
                   <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} tickFormatter={(val) => `₹${(val/1000).toFixed(0)}k`} />
                   <Tooltip 
                     formatter={(val: any) => [formatCurrency(Number(val), currency), 'Value']}
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: 'bold' }}
                   />
                   <Area type="monotone" dataKey="total" stroke="#059669" strokeWidth={2.5} fillOpacity={1} fill="url(#totalColor)" />
                 </AreaChart>
@@ -369,20 +406,20 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="flex items-center gap-1.5 font-medium text-emerald-700">
+              <CheckCircle2 className="h-3.5 w-3.5" />
               Real-time calculations updated automatically with inventory prices.
             </span>
-            <span className="font-semibold text-slate-700">Total: {boms.length} BOMs</span>
+            <span className="font-bold text-slate-700">Total: {boms.length} BOMs</span>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Recent BOMs Table */}
-      <div className="fresh-card overflow-hidden">
+      <motion.div variants={itemVariants} className="fresh-card overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-slate-900">Recent Recipe & Manufacturing BOMs</h2>
+            <h2 className="text-base font-extrabold text-slate-900 font-display">Recent Recipe & Manufacturing BOMs</h2>
             <p className="text-xs text-slate-500">Active bill of materials with unit economics and suggested wholesale prices.</p>
           </div>
           <div className="flex items-center gap-2">
@@ -400,7 +437,7 @@ const Dashboard: React.FC = () => {
           {boms.slice(0, 5).map((bom) => (
             <div
               key={bom.id}
-              className="p-4 sm:p-5 hover:bg-slate-50/80 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+              className="p-4 sm:p-5 hover:bg-slate-50/80 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 group"
             >
               <div className="space-y-1 max-w-xl">
                 <div className="flex items-center gap-2">
@@ -423,7 +460,7 @@ const Dashboard: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <h4 className="text-sm font-bold text-slate-900">{bom.name}</h4>
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-800 transition-colors">{bom.name}</h4>
                 <p className="text-xs text-slate-500 line-clamp-1">{bom.description || 'No description provided'}</p>
               </div>
 
@@ -434,44 +471,48 @@ const Dashboard: React.FC = () => {
                     {formatCurrency(bom.grandTotal, currency)}
                   </p>
                   {bom.costPerUnit && (
-                    <p className="text-[11px] text-emerald-700 font-semibold">
+                    <p className="text-[11px] text-emerald-700 font-bold font-mono">
                       {formatCurrency(bom.costPerUnit, currency)} / unit
                     </p>
                   )}
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => {
                       setCurrentBOM(bom);
                       navigate('/calculator');
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors shadow-xs"
+                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors shadow-2xs"
                   >
                     Edit
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => duplicateBOM(bom.id)}
                     className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                     title="Duplicate BOM"
                   >
                     <Copy className="h-4 w-4" />
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => exportToPDF(bom, { format: 'pdf', includeCosts: true, includeLabor: true, includeSummary: true })}
                     className="p-1.5 rounded-xl text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
                     title="Export PDF"
                   >
                     <Download className="h-4 w-4" />
-                  </button>
+                  </motion.button>
                 </div>
               </div>
             </div>
           ))}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
 export default Dashboard;
+

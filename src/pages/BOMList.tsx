@@ -20,13 +20,35 @@ import {
   Snowflake,
   ExternalLink,
   Flame,
-  ArrowUpDown
+  ArrowUpDown,
+  X
 } from 'lucide-react';
+import { motion, AnimatePresence, type Variants } from 'motion/react';
 import { toast } from 'sonner';
 import useBOMStore from '../stores/bomStore';
 import { formatCurrency } from '../lib/utils';
 import { exportToExcel, exportToPDF } from '../lib/export';
 import { BOM } from '../types';
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0.05
+    }
+  }
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { type: 'spring', damping: 24, stiffness: 300 }
+  }
+};
 
 const BOMList: React.FC = () => {
   const { boms, deleteBOM, duplicateBOM, setCurrentBOM, currency } = useBOMStore();
@@ -63,12 +85,17 @@ const BOMList: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12 animate-fade-in">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6 pb-12"
+    >
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
+            <div className="p-2 rounded-2xl bg-emerald-700 text-white shadow-sm">
               <FileText className="h-5 w-5" />
             </div>
             <div>
@@ -81,26 +108,28 @@ const BOMList: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-3">
-          <Link
-            to="/calculator"
-            onClick={() => setCurrentBOM(null)}
-            className="inline-flex items-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-extrabold shadow-sm transition-colors"
-          >
-            <Plus className="h-4 w-4 mr-1.5" />
-            <span>Create New BOM</span>
-          </Link>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+            <Link
+              to="/calculator"
+              onClick={() => setCurrentBOM(null)}
+              className="inline-flex items-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-extrabold shadow-sm transition-all"
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              <span>Create New BOM</span>
+            </Link>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Filter and Search Bar */}
-      <div className="fresh-card p-4 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between gap-4">
+      <motion.div variants={itemVariants} className="fresh-card p-4 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between gap-4">
         <div className="relative flex-1">
           <Search className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by recipe title, project code (AF-MOM-001), ingredients..."
+            placeholder="Search by recipe title, SKU code (AF-MOM-001), ingredients..."
             className="w-full pl-10 pr-4 py-2 text-xs text-slate-900 font-medium placeholder-slate-400"
           />
         </div>
@@ -149,23 +178,25 @@ const BOMList: React.FC = () => {
             </button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* BOM Count & Quick Stats Bar */}
-      <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-        <span>Showing <strong className="text-slate-900">{filteredBOMs.length}</strong> of {boms.length} registered BOMs</span>
+      <motion.div variants={itemVariants} className="flex items-center justify-between text-xs text-slate-500 px-1">
+        <span>Showing <strong className="text-slate-900 font-mono">{filteredBOMs.length}</strong> of {boms.length} registered BOMs</span>
         <span className="flex items-center gap-1 text-emerald-700 font-semibold">
           <Snowflake className="h-3.5 w-3.5" />
           Cold Chain Verified
         </span>
-      </div>
+      </motion.div>
 
       {/* Grid View */}
       {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <motion.div variants={containerVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredBOMs.map((bom) => (
-            <div
+            <motion.div
               key={bom.id}
+              variants={itemVariants}
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
               className="fresh-card p-5 flex flex-col justify-between hover:border-emerald-400 group"
             >
               <div>
@@ -195,7 +226,7 @@ const BOMList: React.FC = () => {
                 </div>
 
                 {/* Title and description */}
-                <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-800 transition-colors leading-snug">
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-800 transition-colors leading-snug font-display">
                   {bom.name}
                 </h3>
                 <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
@@ -206,7 +237,7 @@ const BOMList: React.FC = () => {
                 <div className="mt-3 py-2 px-3 rounded-xl bg-slate-50 border border-slate-100 grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-slate-400 block">Batch Output</span>
-                    <span className="font-bold text-slate-800">{bom.batchQuantity || 1} {bom.batchUnit || 'units'}</span>
+                    <span className="font-bold text-slate-800 font-mono">{bom.batchQuantity || 1} {bom.batchUnit || 'units'}</span>
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-bold text-slate-400 block">Storage Temp</span>
@@ -220,7 +251,7 @@ const BOMList: React.FC = () => {
                   <span>•</span>
                   <span>{bom.laborItems.length} Operations</span>
                   <span>•</span>
-                  <span className="text-emerald-700 font-semibold">+{bom.profitMargin}% Margin</span>
+                  <span className="text-emerald-700 font-semibold font-mono">+{bom.profitMargin}% Margin</span>
                 </div>
               </div>
 
@@ -234,7 +265,8 @@ const BOMList: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.94 }}
                     onClick={() => {
                       setCurrentBOM(bom);
                       navigate('/calculator');
@@ -243,36 +275,39 @@ const BOMList: React.FC = () => {
                     title="Edit BOM"
                   >
                     Edit
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => setSelectedBOM(bom)}
                     className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                     title="Quick View"
                   >
                     <Eye className="h-4 w-4" />
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => handleDuplicate(bom.id)}
                     className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                     title="Duplicate"
                   >
                     <Copy className="h-4 w-4" />
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => handleDelete(bom.id, bom.name)}
                     className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                     title="Delete"
                   >
                     <Trash2 className="h-4 w-4" />
-                  </button>
+                  </motion.button>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       ) : (
         /* Table View */
-        <div className="fresh-card overflow-hidden">
+        <motion.div variants={itemVariants} className="fresh-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-500 font-bold uppercase tracking-wider">
@@ -298,19 +333,19 @@ const BOMList: React.FC = () => {
                             v{bom.version}
                           </span>
                         </div>
-                        <p className="font-bold text-slate-900 mt-0.5 text-sm">{bom.name}</p>
+                        <p className="font-bold text-slate-900 mt-0.5 text-sm font-display">{bom.name}</p>
                       </div>
                     </td>
                     <td className="py-3.5 px-4 text-slate-600 font-medium">
                       {bom.category || 'Food & Ready-to-Cook'}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-800 font-semibold">
+                    <td className="py-3.5 px-4 text-slate-800 font-semibold font-mono">
                       {bom.batchQuantity || 1} {bom.batchUnit || 'units'}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-800 font-medium">
+                    <td className="py-3.5 px-4 text-slate-800 font-medium font-mono">
                       {formatCurrency(bom.totalMaterialCost, currency)}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-800 font-medium">
+                    <td className="py-3.5 px-4 text-slate-800 font-medium font-mono">
                       {formatCurrency(bom.totalLaborCost, currency)}
                     </td>
                     <td className="py-3.5 px-4 font-extrabold text-slate-900 font-mono">
@@ -321,7 +356,8 @@ const BOMList: React.FC = () => {
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end space-x-1">
-                        <button
+                        <motion.button
+                          whileTap={{ scale: 0.85 }}
                           onClick={() => {
                             setCurrentBOM(bom);
                             navigate('/calculator');
@@ -330,28 +366,31 @@ const BOMList: React.FC = () => {
                           title="Edit"
                         >
                           <Edit className="h-4 w-4" />
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.85 }}
                           onClick={() => exportToPDF(bom, { format: 'pdf', includeCosts: true, includeLabor: true, includeSummary: true })}
                           className="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg"
                           title="Export PDF"
                         >
                           <Download className="h-4 w-4" />
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.85 }}
                           onClick={() => handleDuplicate(bom.id)}
                           className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
                           title="Duplicate"
                         >
                           <Copy className="h-4 w-4" />
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.85 }}
                           onClick={() => handleDelete(bom.id, bom.name)}
                           className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
                           title="Delete"
                         >
                           <Trash2 className="h-4 w-4" />
-                        </button>
+                        </motion.button>
                       </div>
                     </td>
                   </tr>
@@ -359,106 +398,125 @@ const BOMList: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* BOM Detail Modal */}
-      {selectedBOM && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedBOM(null)} />
-          <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 z-10 animate-slide-up space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs font-mono font-bold text-slate-400">{selectedBOM.projectCode || 'AF-BOM'}</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">
-                    v{selectedBOM.version}
-                  </span>
+      <AnimatePresence>
+        {selectedBOM && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" 
+              onClick={() => setSelectedBOM(null)} 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 z-10 space-y-5 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-mono font-bold text-slate-400">{selectedBOM.projectCode || 'AF-BOM'}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">
+                      v{selectedBOM.version}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mt-1 font-display">{selectedBOM.name}</h3>
+                  <p className="text-xs text-slate-500">{selectedBOM.description}</p>
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 mt-1">{selectedBOM.name}</h3>
-                <p className="text-xs text-slate-500">{selectedBOM.description}</p>
+                <button
+                  onClick={() => setSelectedBOM(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setSelectedBOM(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
-              >
-                ✕
-              </button>
-            </div>
 
-            {/* Summary Metrics */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Ingredients</span>
-                <span className="text-base font-extrabold text-slate-900">{formatCurrency(selectedBOM.totalMaterialCost, currency)}</span>
+              {/* Summary Metrics */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Ingredients</span>
+                  <span className="text-base font-extrabold text-slate-900 font-mono">{formatCurrency(selectedBOM.totalMaterialCost, currency)}</span>
+                </div>
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Labor & QA</span>
+                  <span className="text-base font-extrabold text-slate-900 font-mono">{formatCurrency(selectedBOM.totalLaborCost, currency)}</span>
+                </div>
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Overhead + Margin</span>
+                  <span className="text-base font-extrabold text-emerald-700 font-mono">{formatCurrency(selectedBOM.totalOverhead + selectedBOM.totalProfit, currency)}</span>
+                </div>
+                <div className="p-3 rounded-2xl bg-emerald-600 text-white shadow-xs">
+                  <span className="text-[10px] uppercase font-bold text-emerald-200 block">Grand Total</span>
+                  <span className="text-base font-extrabold font-mono">{formatCurrency(selectedBOM.grandTotal, currency)}</span>
+                </div>
               </div>
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Labor & QA</span>
-                <span className="text-base font-extrabold text-slate-900">{formatCurrency(selectedBOM.totalLaborCost, currency)}</span>
-              </div>
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Overhead + Margin</span>
-                <span className="text-base font-extrabold text-emerald-700">{formatCurrency(selectedBOM.totalOverhead + selectedBOM.totalProfit, currency)}</span>
-              </div>
-              <div className="p-3 rounded-2xl bg-emerald-600 text-white shadow-xs">
-                <span className="text-[10px] uppercase font-bold text-emerald-200 block">Grand Total</span>
-                <span className="text-base font-extrabold">{formatCurrency(selectedBOM.grandTotal, currency)}</span>
-              </div>
-            </div>
 
-            {/* Ingredients Table */}
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Recipe Composition & Yield</h4>
-              <div className="border border-slate-200 rounded-2xl overflow-hidden">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
-                    <tr>
-                      <th className="p-2.5">Item Name</th>
-                      <th className="p-2.5">Quantity</th>
-                      <th className="p-2.5">Unit Rate</th>
-                      <th className="p-2.5">Waste %</th>
-                      <th className="p-2.5 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {selectedBOM.items.map((item) => (
-                      <tr key={item.id}>
-                        <td className="p-2.5 font-semibold text-slate-800">{item.materialName}</td>
-                        <td className="p-2.5 text-slate-600">{item.quantity} {item.unit}</td>
-                        <td className="p-2.5 text-slate-600">{formatCurrency(item.costPerUnit, currency)}</td>
-                        <td className="p-2.5 text-slate-500">{item.wastePercentage || 0}%</td>
-                        <td className="p-2.5 font-bold text-slate-900 text-right">{formatCurrency(item.totalCost, currency)}</td>
+              {/* Ingredients Table */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Recipe Composition & Yield</h4>
+                <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
+                      <tr>
+                        <th className="p-2.5">Item Name</th>
+                        <th className="p-2.5">Quantity</th>
+                        <th className="p-2.5">Unit Rate</th>
+                        <th className="p-2.5">Waste %</th>
+                        <th className="p-2.5 text-right">Total</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {selectedBOM.items.map((item) => (
+                        <tr key={item.id}>
+                          <td className="p-2.5 font-semibold text-slate-800">{item.materialName}</td>
+                          <td className="p-2.5 text-slate-600">{item.quantity} {item.unit}</td>
+                          <td className="p-2.5 text-slate-600 font-mono">{formatCurrency(item.costPerUnit, currency)}</td>
+                          <td className="p-2.5 text-slate-500">{item.wastePercentage || 0}%</td>
+                          <td className="p-2.5 font-bold text-slate-900 text-right font-mono">{formatCurrency(item.totalCost, currency)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
-              <button
-                onClick={() => exportToPDF(selectedBOM, { format: 'pdf', includeCosts: true, includeLabor: true, includeSummary: true })}
-                className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors flex items-center space-x-1.5"
-              >
-                <Download className="h-4 w-4" />
-                <span>Export PDF</span>
-              </button>
-              <button
-                onClick={() => {
-                  setCurrentBOM(selectedBOM);
-                  navigate('/calculator');
-                }}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors"
-              >
-                Open in Calculator
-              </button>
-            </div>
+              {/* Actions */}
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => exportToPDF(selectedBOM, { format: 'pdf', includeCosts: true, includeLabor: true, includeSummary: true })}
+                  className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center space-x-1.5"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>Export PDF</span>
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setCurrentBOM(selectedBOM);
+                    navigate('/calculator');
+                  }}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold transition-all"
+                >
+                  Open in Calculator
+                </motion.button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 
 export default BOMList;
+
