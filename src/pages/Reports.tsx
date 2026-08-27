@@ -5,7 +5,7 @@ import { formatCurrency } from '../lib/utils';
 import { exportAllBOMsToExcel } from '../lib/export';
 
 const Reports: React.FC = () => {
-  const { boms } = useBOMStore;
+  const { boms } = useBOMStore();
 
   const totalValue = boms.reduce((sum, bom) => sum + bom.grandTotal, 0);
   const totalMaterialCost = boms.reduce((sum, bom) => sum + bom.totalMaterialCost, 0);

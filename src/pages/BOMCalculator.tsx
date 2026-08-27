@@ -17,7 +17,7 @@ import {
 import useBOMStore from '../stores/bomStore';
 import { formatCurrency, generateId } from '../lib/utils';
 import { exportToExcel, exportToPDF } from '../lib/export';
-import { BOMFormData, BOMItem, BOMLaborItem, ExportOptions } from '../types';
+import { BOM, BOMFormData, BOMItem, BOMLaborItem, ExportOptions } from '../types';
 
 const bomSchema = z.object({
   name: z.string().min(1, 'BOM name is required'),
@@ -111,7 +111,7 @@ const BOMCalculator: React.FC = () => {
   };
 
   const handleExportExcel = () => {
-    const bom = {
+    const bom: BOM = {
       id: currentBOM?.id || generateId(),
       ...watchedValues,
       items: watchedValues.items.map((item, index) => ({
@@ -124,7 +124,11 @@ const BOMCalculator: React.FC = () => {
         id: currentBOM?.laborItems[index]?.id || generateId(),
         totalCost: item.hours * item.hourlyRate,
       })),
-      ...calculatedTotals,
+      totalMaterialCost: calculatedTotals.totalMaterialCost || 0,
+      totalLaborCost: calculatedTotals.totalLaborCost || 0,
+      totalOverhead: calculatedTotals.totalOverhead || 0,
+      totalProfit: calculatedTotals.totalProfit || 0,
+      grandTotal: calculatedTotals.grandTotal || 0,
       version: currentBOM?.version || '1.0',
       createdAt: currentBOM?.createdAt || new Date(),
       updatedAt: new Date(),
@@ -141,7 +145,7 @@ const BOMCalculator: React.FC = () => {
   };
 
   const handleExportPDF = () => {
-    const bom = {
+    const bom: BOM = {
       id: currentBOM?.id || generateId(),
       ...watchedValues,
       items: watchedValues.items.map((item, index) => ({
@@ -154,7 +158,11 @@ const BOMCalculator: React.FC = () => {
         id: currentBOM?.laborItems[index]?.id || generateId(),
         totalCost: item.hours * item.hourlyRate,
       })),
-      ...calculatedTotals,
+      totalMaterialCost: calculatedTotals.totalMaterialCost || 0,
+      totalLaborCost: calculatedTotals.totalLaborCost || 0,
+      totalOverhead: calculatedTotals.totalOverhead || 0,
+      totalProfit: calculatedTotals.totalProfit || 0,
+      grandTotal: calculatedTotals.grandTotal || 0,
       version: currentBOM?.version || '1.0',
       createdAt: currentBOM?.createdAt || new Date(),
       updatedAt: new Date(),
@@ -171,7 +179,7 @@ const BOMCalculator: React.FC = () => {
   };
 
   const onSubmit = (data: BOMFormData) => {
-    const bom = {
+    const bom: BOM = {
       id: currentBOM?.id || generateId(),
       ...data,
       items: data.items.map((item, index) => ({
@@ -184,7 +192,11 @@ const BOMCalculator: React.FC = () => {
         id: currentBOM?.laborItems[index]?.id || generateId(),
         totalCost: item.hours * item.hourlyRate,
       })),
-      ...calculatedTotals,
+      totalMaterialCost: calculatedTotals.totalMaterialCost || 0,
+      totalLaborCost: calculatedTotals.totalLaborCost || 0,
+      totalOverhead: calculatedTotals.totalOverhead || 0,
+      totalProfit: calculatedTotals.totalProfit || 0,
+      grandTotal: calculatedTotals.grandTotal || 0,
       version: currentBOM?.version || '1.0',
       createdAt: currentBOM?.createdAt || new Date(),
       updatedAt: new Date(),

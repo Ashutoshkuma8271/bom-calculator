@@ -1,0 +1,6 @@
+{
+  "name": "BOM Calculator",
+  "description": "Professional Bill of Materials Management, Cost Estimation, and Material Tracking Application",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

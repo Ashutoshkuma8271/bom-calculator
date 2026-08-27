@@ -7,7 +7,7 @@ export const exportToExcel = (bom: BOM, options: ExportOptions) => {
   const workbook = XLSX.utils.book_new();
   
   // Create data for export
-  const data = [
+  const data: (string | number)[][] = [
     ['BOM Details'],
     ['Name', bom.name],
     ['Description', bom.description || ''],
@@ -172,7 +172,7 @@ export const exportToPDF = (bom: BOM, options: ExportOptions) => {
 export const exportAllBOMsToExcel = (boms: BOM[]) => {
   const workbook = XLSX.utils.book_new();
   
-  const data = [
+  const data: (string | number)[][] = [
     ['BOM Name', 'Project Code', 'Version', 'Status', 'Total Material Cost', 'Total Labor Cost', 'Grand Total', 'Created Date'],
     ...boms.map(bom => [
       bom.name,
